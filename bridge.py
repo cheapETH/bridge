@@ -159,7 +159,7 @@ hh = sha3_256(s + block['mixHash'])
 print("have:  ", big_endian_to_int(hh))
 print("needed:", 2**256 // block['difficulty'])
 print("smaller?")
-print(hh)
+print(encode_hex(hh))
 
 exit(0)
 #print(serialize_hash(hh))
