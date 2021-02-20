@@ -1,0 +1,24 @@
+We have two chains (lol two chainz: https://www.youtube.com/watch?v=4dfSrP1CbeQ)
+
+The ETH chain and the cheapETH chain. We can assume the ETH chain has ~1000x more value than the cheapETH chain.
+
+In order to move value between chains, we need a trusted way to get the state of each chain on to the other chain.
+
+L1 -> L2 Bridge:
+
+L1 (ETH) is secured by proof of work. Generating a fake proof of work chain is very expensive.
+
+How it works:
+
+1. Deploy contract on L2 with a checkpoint hash of an ETH block. You can manually audit this, the same way you would audit the contract address.
+
+2. Anyone can submit future block headers of the main chain, the contract validates that they are correct and have the right difficultly. 
+
+3. If someone submits a longer chain, the contract follows that chain. (block reorg)
+
+Think like we are running a "light node" on cheapETH itself. I don't know how doable this is, but it would be nice if it worked. The key part is that the cheapETH contract must be able to validate the difficult operation.
+
+If this can't be reasonably written on the Ethereum platform, we could have a special contract address on cheapETH which contains the mainETH state hash, but I hope it doesn't come to that.
+
+
+
