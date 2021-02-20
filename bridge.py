@@ -104,6 +104,16 @@ header = BlockHeader(
     nonce=block['nonce']
 )
 
+from hexdump import hexdump
+hexdump(block['parentHash'])
+print("")
+hexdump(rlp.encode(header))
+print("")
+hexdump(rlp.encode(header[:-2]))
+
+exit(0)
+
+
 print("BLOCK HASH MATCH?")
 print(block['hash'])
 print(header.hash)
