@@ -139,8 +139,8 @@ s = sha3_512(mining_hash + block['nonce'][::-1])
 hh = sha3_256(s + block['mixHash'])
 
 #hh = keccak(keccak(mining_hash+block['nonce']+block['mixHash']))
-print("needed:", 2**256 // block['difficulty'])
 print("have:  ", big_endian_to_int(hh))
+print("needed:", 2**256 // block['difficulty'])
 print("smaller?")
 print(hh)
 #print(serialize_hash(hh))
@@ -190,7 +190,8 @@ def check_pow(block_number: int,
     mining_output = hashimoto_light(
         block_number, cache, mining_hash, big_endian_to_int(nonce))
     result = big_endian_to_int(mining_output[b'result'])
-    print(result)
+    print("real:  ", result)
+    print("needed:", 2**256 // difficulty)
     if mining_output[b'mix digest'] != mix_hash:
         raise ValidationError(
             f"mix hash mismatch; expected: {encode_hex(mining_output[b'mix digest'])} "
