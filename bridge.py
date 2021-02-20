@@ -25,7 +25,7 @@ for k,v in block.items():
   print(k,v)
 
 from hashlib import sha3_512, sha3_256
-from eth_utils import keccak
+from eth_utils import keccak, encode_hex, decode_hex
 import rlp
 from rlp.sedes import (
     BigEndianInt,
@@ -110,19 +110,11 @@ print(header.hash)
 mining_hash = header.mining_hash
 print("***********", mining_hash)
 
-import sha3 as _sha3
-sha3_256 = lambda x: _sha3.sha3_256(x).digest()
-sha3_512 = lambda x: _sha3.sha3_512(x).digest()
 
-"""
 def zpad(s, length):
     return s + b'\x00' * max(0, length - len(s))
 
 WORD_BYTES = 4
-from rlp.utils import decode_hex, encode_hex
-
-def decode_int(s):
-    return int(encode_hex(s[::-1]), 16) if s else 0
 
 def encode_int(s):
     a = "%x" % s
@@ -131,11 +123,36 @@ def encode_int(s):
 def serialize_hash(h):
     return b''.join([zpad(encode_int(x), 4) for x in h])
 
+def decode_int(s):
+    return int(encode_hex(s[::-1]), 16) if s else 0
+
 def deserialize_hash(h):
     return [decode_int(h[i:i+WORD_BYTES]) for i in range(0, len(h), WORD_BYTES)]
+
+import sha3
+def hash_words(h, sz, x):
+  if isinstance(x, list):
+    x = serialize_hash(x)
+  y = h(x)
+  return deserialize_hash(y)
+
+"""
+def sha3_512(x):
+  return hash_words(lambda v: sha3.sha3_512(v).digest(), 64, x)
+
+def sha3_256(x):
+  return hash_words(lambda v: sha3.sha3_256(v).digest(), 32, x)
 """
 
+sha3_512 = lambda v: sha3.keccak_512(v).digest()
+sha3_256 = lambda v: sha3.keccak_256(v).digest()
+
+print(len(mining_hash + block['nonce']))
 s = sha3_512(mining_hash + block['nonce'][::-1])
+print(len(s))
+print(s, block['mixHash'], block['nonce'])
+#print(deserialize_hash(block['mixHash']))
+print(len(s + block['mixHash']))
 hh = sha3_256(s + block['mixHash'])
 
 #hh = keccak(keccak(mining_hash+block['nonce']+block['mixHash']))
@@ -143,6 +160,8 @@ print("have:  ", big_endian_to_int(hh))
 print("needed:", 2**256 // block['difficulty'])
 print("smaller?")
 print(hh)
+
+exit(0)
 #print(serialize_hash(hh))
 print("***********")
 
@@ -178,6 +197,7 @@ def get_cache(block_number: int) -> bytes:
 import sha3
 import rlp
 from eth_utils import ValidationError, encode_hex
+from ethash import hashimoto_light as hashimoto_light_python
 
 def check_pow(block_number: int,
               mining_hash: Hash32,
@@ -187,7 +207,7 @@ def check_pow(block_number: int,
     print(len(mining_hash), len(mix_hash), len(nonce))
     cache = get_cache(block_number)
     print("got cache")
-    mining_output = hashimoto_light(
+    mining_output = hashimoto_light_python(
         block_number, cache, mining_hash, big_endian_to_int(nonce))
     result = big_endian_to_int(mining_output[b'result'])
     print("real:  ", result)
