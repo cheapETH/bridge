@@ -170,6 +170,7 @@ print(len(s + block['mixHash']))
 hh = sha3_256(s + block['mixHash'])
 
 #hh = keccak(keccak(mining_hash+block['nonce']+block['mixHash']))
+print(block['difficulty'])
 print("have:  ", big_endian_to_int(hh))
 print("needed:", 2**256 // block['difficulty'])
 print("smaller?")

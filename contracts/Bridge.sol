@@ -7,29 +7,6 @@ import "solidity-rlp/contracts/RLPReader.sol";
 
 // derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
 
-/*struct BlockHeader {
-  // two hashes
-  bytes32 parent_hash;
-  bytes32 uncles_hash;
-  // payout
-  address coinbase;
-  // state roots
-  bytes32 state_root;
-  bytes32 transaction_root;
-  bytes32 receipt_root;
-  // bloom
-  uint256 bloom;
-  // ints
-  uint difficulty;
-  uint block_number;
-  uint gas_limit;
-  uint gas_used;
-  uint timestamp;
-  // sealed header
-  bytes32 mix_hash;
-  bytes8 nonce;
-}*/
-
 contract Bridge {
   using RLPReader for *;
   using Ethash for *;
@@ -73,6 +50,7 @@ contract Bridge {
   struct Header {
     uint24 blockNumber;
     uint232 totalDifficulty;
+    bytes32 parentHash;
   }
 
   mapping (bytes32 => Header) private headers;
@@ -82,11 +60,18 @@ contract Bridge {
     Header memory newHeader;
     newHeader.blockNumber = genesisBlockNumber;
     newHeader.totalDifficulty = 0; // 0 is a fine place to start
+    newHeader.parentHash = "0x0";
     headers[genesisHash] = newHeader;
+
+    longestChainEndpoint = genesisHash;
   }
 
   function isHeaderStored(bytes32 hash) public view returns (bool) {
     return headers[hash].blockNumber != 0;
+  }
+
+  function getLongestChainEndpoint() public view returns (bytes32 hash) {
+    return longestChainEndpoint;
   }
 
   function submitHeader(bytes memory rlpHeader) public {
@@ -108,27 +93,22 @@ contract Bridge {
     // verify block was hard to make
     // tmp = sha3_512(miningHash + decodedNonce)
     // hh = sha3_256(tmp + decodedMixHash)
-
     uint[16] memory tmp = Ethash.computeS(uint(miningHash), uint(decodedNonce));
     uint hh = Ethash.computeSha3(tmp, decodedMixHash);
-    console.log(hh);
+    // confirm hh * decodedDifficulty < 2**256
+    uint c = hh * decodedDifficulty;
+    require(c / hh == decodedDifficulty, "block difficultly didn't match hash");
 
-    //console.log(2**256 / decodedDifficulty);
-
-    /*bytes memory miningHashWNonce = new bytes(32+8);
-    for (uint i = 0; i < 32; i++) {
-      miningHashWNonce[i] = miningHash[i];
-    }
-    for (uint i = 0; i < 8; i++) {
-      miningHashWNonce[39-i] = decodedNonce[i];
-    }
-    console.logBytes(miningHashWNonce);*/
-    //console.log(tmp[0]);
-
-    // add block to chain
+    // create block
     Header memory newHeader;
     newHeader.blockNumber = uint24(decodedBlockNumber);
     newHeader.totalDifficulty = uint232(parentHeader.totalDifficulty + decodedDifficulty);
+    newHeader.parentHash = decodedParent;
+
+    // add block to chain
+    if (newHeader.totalDifficulty > headers[longestChainEndpoint].totalDifficulty) {
+      longestChainEndpoint = blockHash;
+    }
     headers[blockHash] = newHeader;
   }
 
