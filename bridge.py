@@ -20,7 +20,7 @@ for i in range(FORKBLOCK, 11905170, 100):
 """
 
 #block = w3.eth.get_block(11905170)
-block = w3.eth.get_block(FORKBLOCK+100)
+block = w3.eth.get_block(FORKBLOCK-100)
 for k,v in block.items():
   print(k,v)
 
@@ -113,7 +113,7 @@ print(binascii.hexlify(rlp.encode(header)))
 print("")
 hexdump(rlp.encode(header[:-2]))
 
-exit(0)
+#exit(0)
 
 
 print("BLOCK HASH MATCH?")
@@ -160,7 +160,9 @@ sha3_512 = lambda v: sha3.keccak_512(v).digest()
 sha3_256 = lambda v: sha3.keccak_256(v).digest()
 
 print(len(mining_hash + block['nonce']))
+hexdump(mining_hash + block['nonce'][::-1])
 s = sha3_512(mining_hash + block['nonce'][::-1])
+hexdump(s)
 print(len(s))
 print(s, block['mixHash'], block['nonce'])
 #print(deserialize_hash(block['mixHash']))

@@ -51,8 +51,6 @@ describe("Bridge contract", function() {
 
     expect(await Bridge.isHeaderStored(add_block['hash']));
 
-
-
     //console.log(hardhatBridge);
   });
 });
