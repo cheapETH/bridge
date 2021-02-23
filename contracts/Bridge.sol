@@ -74,6 +74,15 @@ contract Bridge {
     return longestChainEndpoint;
   }
 
+  function getHeader(bytes32 blockHash) public view returns (bytes32 parentHash, uint blockNumber, uint totalDifficulty) {
+    Header storage header = headers[blockHash];
+    return (
+      header.parentHash,
+      header.blockNumber,
+      header.totalDifficulty
+    );
+  }
+
   function submitHeader(bytes memory rlpHeader) public {
     bytes32 blockHash = keccak256(rlpHeader);
     bytes32 miningHash = getMiningHash(rlpHeader);
