@@ -57,6 +57,8 @@ contract Bridge {
   function submitHeader(bytes memory rlpHeader) public returns (bytes32) {
     bytes32 blockHash = keccak256(rlpHeader);
     bytes32 miningHash = getMiningHash(rlpHeader);
+
+    return blockHash;
   }
 
   // the mining hash is the block hash without mixHash and nonce (length 42)

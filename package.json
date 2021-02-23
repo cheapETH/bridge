@@ -1,0 +1,17 @@
+{
+  "name": "bridge",
+  "version": "1.0.0",
+  "description": "Bridge from ETH to cheapETH",
+  "main": "index.js",
+  "repository": "git@github.com:cheapETH/bridge.git",
+  "author": "George Hotz <geohot@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "chai": "^4.3.0",
+    "ethereum-waffle": "^3.2.2",
+    "ethers": "^5.0.31",
+    "hardhat": "^2.0.11"
+  }
+}

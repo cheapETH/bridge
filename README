@@ -21,4 +21,12 @@ Think like we are running a "light node" on cheapETH itself. I don't know how do
 If this can't be reasonably written on the Ethereum platform, we could have a special contract address on cheapETH which contains the mainETH state hash, but I hope it doesn't come to that.
 
 
+== Building ==
+
+Going to try the fancy infrastructure instead of rolling my own in Python
+
+Using yarn, hardhat, and waffle
+
+# npx hardhat compile
+
 
