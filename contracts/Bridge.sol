@@ -60,7 +60,7 @@ contract Bridge {
     Header memory newHeader;
     newHeader.blockNumber = genesisBlockNumber;
     newHeader.totalDifficulty = 0; // 0 is a fine place to start
-    newHeader.parentHash = "0x0";
+    newHeader.parentHash = 0;
     headers[genesisHash] = newHeader;
 
     longestChainEndpoint = genesisHash;
@@ -82,6 +82,8 @@ contract Bridge {
       header.totalDifficulty
     );
   }
+  
+  // TODO: write function submitHeaders which can submit multiple
 
   function submitHeader(bytes memory rlpHeader) public {
     bytes32 blockHash = keccak256(rlpHeader);

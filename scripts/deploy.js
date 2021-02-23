@@ -1,5 +1,5 @@
 var Web3 = require('web3');
-var w3 = new Web3("https://node.cheapeth.org/rpc");
+var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
 
 async function main() {
   const [deployer] = await ethers.getSigners();

@@ -3,11 +3,11 @@ const { expect } = require("chai");
 var rlp = require('rlp');
 var Web3 = require('web3');
 var w3 = new Web3("https://node.cheapeth.org/rpc");
-var toHex = function(x) { return (x==0) ? "0x" : w3.utils.toHex(x) };
 
 const FORKBLOCK = 11818960;
 
 function getBlockParts(block) {
+  var toHex = function(x) { return (x==0) ? "0x" : w3.utils.toHex(x) };
   return [
     block['parentHash'],
     block['sha3Uncles'],
