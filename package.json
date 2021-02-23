@@ -12,6 +12,7 @@
     "chai": "^4.3.0",
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.31",
-    "hardhat": "^2.0.11"
+    "hardhat": "^2.0.11",
+    "solidity-rlp": "^2.0.3"
   }
 }

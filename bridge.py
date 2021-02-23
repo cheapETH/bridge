@@ -20,7 +20,7 @@ for i in range(FORKBLOCK, 11905170, 100):
 """
 
 #block = w3.eth.get_block(11905170)
-block = w3.eth.get_block(FORKBLOCK-100)
+block = w3.eth.get_block(FORKBLOCK+100)
 for k,v in block.items():
   print(k,v)
 
@@ -108,6 +108,8 @@ from hexdump import hexdump
 hexdump(block['parentHash'])
 print("")
 hexdump(rlp.encode(header))
+import binascii
+print(binascii.hexlify(rlp.encode(header)))
 print("")
 hexdump(rlp.encode(header[:-2]))
 

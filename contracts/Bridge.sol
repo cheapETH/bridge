@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
+pragma solidity >=0.6.0;
+
+import "solidity-rlp/contracts/RLPReader.sol";
 
 // derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
 
@@ -27,11 +29,25 @@ pragma solidity >=0.7.0;
 }*/
 
 contract Bridge {
-  struct Header {
-    uint24 blockNumber;
-    uint232 totalDifficulty;
+  using RLPReader for *;
 
-    bytes32 parentHash;
+  function getParentBlockNumberDiff(bytes memory rlpHeader) internal pure returns (bytes32, uint, uint) {
+    uint idx;
+    bytes32 parent;
+    uint blockNumber;
+    uint difficulty;
+    RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
+
+    while(it.hasNext()) {
+      if ( idx == 0 ) parent = bytes32(it.next().toUint());
+      else if ( idx == 7 ) difficulty = it.next().toUint();
+      else if ( idx == 8 ) blockNumber = it.next().toUint();
+      else it.next();
+
+      idx++;
+    }
+
+    return (parent, blockNumber, difficulty);
   }
 
   // really, this isn't a built-in?
@@ -48,17 +64,45 @@ contract Bridge {
     return newArray;
   }
 
+  struct Header {
+    uint24 blockNumber;
+    uint232 totalDifficulty;
+
+    bytes32 parentHash;
+  }
+
   mapping (bytes32 => Header) private headers;
   bytes32 longestChainEndpoint;
 
-  constructor(bytes32 genesisHash) {
+  constructor(bytes32 genesisHash, uint24 genesisBlockNumber) public {
+    Header memory newHeader;
+    newHeader.blockNumber = genesisBlockNumber;
+    newHeader.totalDifficulty = 0; // add parent diff
+    newHeader.parentHash = "0x0";
+    headers[genesisHash] = newHeader;
   }
 
-  function submitHeader(bytes memory rlpHeader) public returns (bytes32) {
+  function isHeaderStored(bytes32 hash) public view returns (bool) {
+    return headers[hash].blockNumber != 0;
+  }
+
+  function submitHeader(bytes memory rlpHeader) public {
     bytes32 blockHash = keccak256(rlpHeader);
     bytes32 miningHash = getMiningHash(rlpHeader);
 
-    return blockHash;
+    bytes32 decodedParent;
+    uint decodedBlockNumber;
+    uint decodedDifficulty;
+    (decodedParent, decodedBlockNumber, decodedDifficulty) = getParentBlockNumberDiff(rlpHeader);
+
+    require(isHeaderStored(decodedParent), "parent does not exist");
+
+    Header memory newHeader;
+    newHeader.blockNumber = uint24(decodedBlockNumber);
+    newHeader.totalDifficulty = uint232(decodedDifficulty); // add parent diff
+    newHeader.parentHash = decodedParent;
+    headers[blockHash] = newHeader;
+
   }
 
   // the mining hash is the block hash without mixHash and nonce (length 42)

@@ -6004,6 +6004,11 @@ solc@^0.6.3:
     semver "^5.5.0"
     tmp "0.0.33"
 
+solidity-rlp@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/solidity-rlp/-/solidity-rlp-2.0.3.tgz#5116b50407b00f45e803a8a32145190d7b315d89"
+  integrity sha512-d61KdqL1Fm1LoIzHVvvh4SONE5jM4wzYzM6MY53p1DBFy7ZDIHyXdq/CIGhWMItOjr/mvbXJP9BEHX2Q0TZqfg==
+
 source-map-resolve@^0.5.0:
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/source-map-resolve/-/source-map-resolve-0.5.3.tgz#190866bece7553e1f8f267a2ee82c606b5509a1a"
