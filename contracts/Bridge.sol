@@ -99,6 +99,8 @@ contract Bridge {
     Header storage parentHeader = headers[decodedParent];
     require(parentHeader.blockNumber == decodedBlockNumber-1, "parent block number is wrong");
 
+    // TODO: confirm difficultly is correct with formula
+
     // verify block was hard to make
     // tmp = sha3_512(miningHash + decodedNonce)
     // hh = sha3_256(tmp + decodedMixHash)
