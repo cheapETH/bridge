@@ -1,9 +1,12 @@
 var Web3 = require('web3');
 var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
 
+let sleep = require('util').promisify(setTimeout);
 var rlp = require('rlp');
 
-var bridgeAddress = "0x5A7F7095e582D7082F0EBCf7172e510A6B5c5D7E";
+const MAX_BLOCK_CHUNK = 5;
+const bridgeAddress = "0x76523BB738Ff66d3B83Dde2cA56A930dd20994eF";
+
 console.log("Using bridge at address", bridgeAddress);
 
 // TODO: make this a library with the test
@@ -44,25 +47,32 @@ async function main() {
 
   while (1) {
     var ep = await Bridge.getLongestChainEndpoint();
-    console.log(ep);
 
+    console.log(ep);
     if (seen[ep]) {
-      //sleep(2000);
+      await sleep(5000);
       continue;
     }
 
-    seen[ep] = true;
-
     var hdr = await Bridge.getHeader(ep);
     console.log(hdr);
+    var blockNumber = hdr['blockNumber'].toNumber();
+    const latestBlock = await w3.eth.getBlock('latest');
+    const blocksBehind = latestBlock['number'] - blockNumber;
+    console.log("we are at", blockNumber, "which is", blocksBehind, "blocks behind", latestBlock['number']);
 
-    var blockNumber = hdr['blockNumber'];
+    // not behind?
+    if (blocksBehind == 0) continue;
+    seen[ep] = true;
 
-    const new_block = await w3.eth.getBlock(blockNumber.add(1));
-    //console.log(new_block);
-    const ret = await Bridge.submitHeader(getBlockRlp(new_block));
-    console.log("submitted", new_block['blockNumber'], "on", blockNumber);
-
+    var hdrs = [];
+    for (var i = 0; i < Math.min(MAX_BLOCK_CHUNK, blocksBehind); i++) {
+      const submitBlockNumber = blockNumber+i+1;
+      const new_block = await w3.eth.getBlock(submitBlockNumber);
+      hdrs.push(getBlockRlp(new_block));
+    }
+    const ret = await Bridge.submitHeaders(hdrs);
+    console.log("submitted", hdrs.length, "blocks with tx hash", ret['hash']);
   }
 }
 
