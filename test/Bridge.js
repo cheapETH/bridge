@@ -31,7 +31,7 @@ describe("Hashing function", function() {
   it("Javascript block hash is correct", async function() {
     block = await w3.eth.getBlock(FORKBLOCK-100)
     var dat = rlp.encode(getBlockParts(block));
-    expect(w3.utils.soliditySha3(dat) == block['hash']);
+    expect(w3.utils.soliditySha3(dat)).to.equal(block['hash']);
   });
 });
 
@@ -41,13 +41,13 @@ describe("Bridge contract", function() {
     const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
     Bridge = await BridgeFactory.deploy(genesis_block['hash'], genesis_block['number']);
-    expect(await Bridge.isHeaderStored(genesis_block['hash']));
+    expect(await Bridge.isHeaderStored(genesis_block['hash'])).to.equal(true);
   });
 
 
   it("Next block isn't there yet", async function() {
     add_block = await w3.eth.getBlock(FORKBLOCK-100)
-    expect(await !Bridge.isHeaderStored(add_block['hash']));
+    expect(await Bridge.isHeaderStored(add_block['hash'])).to.equal(false);
   });
 
 
@@ -56,11 +56,26 @@ describe("Bridge contract", function() {
       add_block = await w3.eth.getBlock(bn);
       var add_block_rlp = rlp.encode(getBlockParts(add_block));
       const ret = await Bridge.submitHeader(add_block_rlp);
-      expect(await Bridge.isHeaderStored(add_block['hash']));
+      expect(await Bridge.isHeaderStored(add_block['hash'])).to.equal(true);
     }
 
     await do_add_block(FORKBLOCK-100);
     await do_add_block(FORKBLOCK-99);
+  });
+
+  it("Bridge adds two blocks together", async function() {
+    add_block_1 = await w3.eth.getBlock(FORKBLOCK-100);
+    add_block_2 = await w3.eth.getBlock(FORKBLOCK-99);
+
+    expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(false);
+    expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(false);
+
+    var add_block_rlp_1 = rlp.encode(getBlockParts(add_block_1));
+    var add_block_rlp_2 = rlp.encode(getBlockParts(add_block_2));
+    const ret = await Bridge.submitHeaders([add_block_rlp_1, add_block_rlp_2]);
+
+    expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(true);
+    expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(true);
   });
 
   it("Bridge doesn't add block with broken difficulty", async function() {
