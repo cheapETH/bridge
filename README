@@ -30,3 +30,15 @@ Using yarn, hardhat, and waffle
 # npx hardhat compile
 
 
+== Testing == 
+
+# npx hardhat test
+
+
+== Deploying == 
+
+# npx hardhat run scripts/deploy.js --network cheapeth
+# npx hardhat run scripts/bridge.js --network cheapeth
+
+
+
