@@ -4,7 +4,7 @@ var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
 let sleep = require('util').promisify(setTimeout);
 var rlp = require('rlp');
 
-const MAX_BLOCK_CHUNK = 5;
+const MAX_BLOCK_CHUNK = 10;
 const bridgeAddress = "0x76523BB738Ff66d3B83Dde2cA56A930dd20994eF";
 
 console.log("Using bridge at address", bridgeAddress);
@@ -62,7 +62,10 @@ async function main() {
     console.log("we are at", blockNumber, "which is", blocksBehind, "blocks behind", latestBlock['number']);
 
     // not behind?
-    if (blocksBehind == 0) continue;
+    if (blocksBehind == 0) {
+      await sleep(5000);
+      continue;
+    }
     seen[ep] = true;
 
     var hdrs = [];
@@ -72,7 +75,7 @@ async function main() {
       hdrs.push(getBlockRlp(new_block));
     }
     const ret = await Bridge.submitHeaders(hdrs);
-    console.log("submitted", hdrs.length, "blocks with tx hash", ret['hash']);
+    console.log("submitted", hdrs.length, "block headers with tx hash", ret['hash']);
   }
 }
 
