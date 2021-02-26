@@ -35,6 +35,13 @@ describe("Hashing function", function() {
   });
 });
 
+async function do_add_block(Bridge, bn) {
+  add_block = await w3.eth.getBlock(bn);
+  var add_block_rlp = rlp.encode(getBlockParts(add_block));
+  const ret = await Bridge.submitHeader(add_block_rlp);
+  expect(await Bridge.isHeaderStored(add_block['hash'])).to.equal(true);
+}
+
 describe("Bridge contract", function() {
   beforeEach(async function () {
     const genesis_block = await w3.eth.getBlock(FORKBLOCK-101)
@@ -52,15 +59,8 @@ describe("Bridge contract", function() {
 
 
   it("Bridge adds two blocks", async function() {
-    var do_add_block = async function(bn) {
-      add_block = await w3.eth.getBlock(bn);
-      var add_block_rlp = rlp.encode(getBlockParts(add_block));
-      const ret = await Bridge.submitHeader(add_block_rlp);
-      expect(await Bridge.isHeaderStored(add_block['hash'])).to.equal(true);
-    }
-
-    await do_add_block(FORKBLOCK-100);
-    await do_add_block(FORKBLOCK-99);
+    await do_add_block(Bridge, FORKBLOCK-100);
+    await do_add_block(Bridge, FORKBLOCK-99);
   });
 
   it("Bridge adds two blocks together", async function() {
@@ -96,10 +96,18 @@ describe("Bridge contract", function() {
     await expect(Bridge.submitHeader(add_block_rlp)).to.be.revertedWith("parent does not exist");
   });
 
+  it("Bridge adds several blocks and confirms they are in the chain", async function() {
+    for (var i = 0; i < 10; i++) {
+      await do_add_block(Bridge, FORKBLOCK-100+i);
+    }
+
+    for (var i = 0; i < 10; i++) {
+      var bn = FORKBLOCK-100+i;
+      add_block = await w3.eth.getBlock(bn);
+      var bbn = await Bridge.getBlockByNumber(bn);
+      expect(bbn['depth']).to.equal(9-i);
+      expect(bbn['hash']).to.equal(add_block['hash'])
+    }
+  });
 });
-
-
-
-
-
 

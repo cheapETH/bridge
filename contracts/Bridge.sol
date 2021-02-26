@@ -99,7 +99,15 @@ contract Bridge {
     return longestChainEndpoint;
   }
 
-  function getBlockNumberHash(uint blockNumber) public view returns (bytes32 hash) {
+  // walk back the blockchain until we find this block number
+  function getBlockByNumber(uint blockNumber) public view returns (bytes32 hash, uint24 depth) {
+    bytes32 ptr = longestChainEndpoint;
+    uint24 retdepth = 0;
+    while (true) {
+      if (headers[ptr].blockNumber == blockNumber) return (ptr, retdepth);
+      retdepth += 1;
+      ptr = headers[ptr].parentHash;
+    }
   }
 
   function getHeader(bytes32 blockHash) public view returns (bytes32 parentHash, uint blockNumber, uint totalDifficulty) {
@@ -132,7 +140,7 @@ contract Bridge {
     require(parentHeader.blockNumber == header.blockNumber-1, "parent block number is wrong");
 
     // confirm block is in order
-    require(parentHeader.timestamp <= header.timestamp);
+    require(parentHeader.timestamp <= header.timestamp, "parent happened after this block");
 
     // confirm difficultly is correct with formula
     uint expectedDifficulty = calculateDifficulty(parentHeader, header.timestamp);
