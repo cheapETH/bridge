@@ -97,15 +97,16 @@ describe("Bridge contract", function() {
   });
 
   it("Bridge adds several blocks and confirms they are in the chain", async function() {
-    for (var i = 0; i < 10; i++) {
+    var FINAL = 5;
+    for (var i = 0; i < FINAL; i++) {
       await do_add_block(Bridge, FORKBLOCK-100+i);
     }
 
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < FINAL; i++) {
       var bn = FORKBLOCK-100+i;
       add_block = await w3.eth.getBlock(bn);
       var bbn = await Bridge.getBlockByNumber(bn);
-      expect(bbn['depth']).to.equal(9-i);
+      expect(bbn['depth']).to.equal(FINAL-1-i);
       expect(bbn['hash']).to.equal(add_block['hash'])
     }
   });
