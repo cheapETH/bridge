@@ -11,6 +11,7 @@ import "solidity-rlp/contracts/RLPReader.sol";
 contract Bridge {
   uint8 constant ALLOWED_FUTURE_BLOCK_TIME = 15 seconds;
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
+  uint32 immutable bombDelayFromParent;
 
   using RLPReader for *;
   using Ethash for *;
@@ -74,7 +75,7 @@ contract Bridge {
   mapping (bytes32 => Header) private headers;
   bytes32 longestChainEndpoint;
 
-  constructor(bytes memory genesisHeader) public {
+  constructor(bytes memory genesisHeader, uint32 bombDelayFromParentInput) public {
     bytes32 genesisHash = keccak256(genesisHeader);
     FullHeader memory header = decodeBlockData(genesisHeader);
 
@@ -89,6 +90,8 @@ contract Bridge {
 
     headers[genesisHash] = newHeader;
     longestChainEndpoint = genesisHash;
+
+    bombDelayFromParent = bombDelayFromParentInput - 1;
   }
 
   function isHeaderStored(bytes32 hash) public view returns (bool) {
@@ -181,7 +184,7 @@ contract Bridge {
     return keccak256(rlpWithoutNonce);
   }
 
-  function calculateDifficulty(Header memory parent, uint timestamp) private pure returns (uint) {
+  function calculateDifficulty(Header memory parent, uint timestamp) private view returns (uint) {
     int x = int((timestamp - parent.timestamp) / 9);
 
     // take into consideration uncles of parent
@@ -200,12 +203,6 @@ contract Bridge {
     // minimum difficulty = 131072
     if (x < 131072) {
       x = 131072;
-    }
-
-    uint bombDelayFromParent = 5000000 - 1;
-    if (parent.blockNumber + 1 >= 9200000) {
-      // https://eips.ethereum.org/EIPS/eip-2384
-      bombDelayFromParent = 9000000 - 1;
     }
 
     // calculate a fake block number for the ice-age delay

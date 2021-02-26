@@ -1,5 +1,14 @@
 var Web3 = require('web3');
-var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
+
+const USE_DEVETH = true;
+
+if (USE_DEVETH) {
+  var w3 = new Web3("https://rpc.deveth.org/");
+  const bombDelayFromParent = 900000000;
+} else {
+  var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
+  const bombDelayFromParent = 9000000;
+}
 
 let sleep = require('util').promisify(setTimeout);
 var rlp = require('rlp');
@@ -46,7 +55,7 @@ async function main() {
     const genesis_block = await w3.eth.getBlock("latest");
 
     const BridgeFactory = await ethers.getContractFactory("Bridge");
-    Bridge = await BridgeFactory.deploy(getBlockRlp(genesis_block));
+    Bridge = await BridgeFactory.deploy(getBlockRlp(genesis_block), bombDelayFromParent);
 
     console.log("Deployed Bridge address:", Bridge.address);
   } else {

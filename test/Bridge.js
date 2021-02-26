@@ -3,6 +3,7 @@ const { expect } = require("chai");
 var rlp = require('rlp');
 var Web3 = require('web3');
 var w3 = new Web3("https://node.cheapeth.org/rpc");
+const bombDelayFromParent = 9000000;
 
 const FORKBLOCK = 11818960;
 
@@ -47,7 +48,7 @@ describe("Bridge contract", function() {
     const genesis_block = await w3.eth.getBlock(FORKBLOCK-101)
     const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
-    Bridge = await BridgeFactory.deploy(rlp.encode(getBlockParts(genesis_block)));
+    Bridge = await BridgeFactory.deploy(rlp.encode(getBlockParts(genesis_block)), bombDelayFromParent);
     expect(await Bridge.isHeaderStored(genesis_block['hash'])).to.equal(true);
   });
 
