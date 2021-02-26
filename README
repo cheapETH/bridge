@@ -37,7 +37,6 @@ Using yarn, hardhat, and waffle
 
 == Deploying == 
 
-# npx hardhat run scripts/deploy.js --network cheapeth
 # npx hardhat run scripts/bridge.js --network cheapeth
 
 

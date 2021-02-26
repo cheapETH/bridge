@@ -40,7 +40,7 @@ describe("Bridge contract", function() {
     const genesis_block = await w3.eth.getBlock(FORKBLOCK-101)
     const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
-    Bridge = await BridgeFactory.deploy(genesis_block['hash'], genesis_block['number']);
+    Bridge = await BridgeFactory.deploy(rlp.encode(getBlockParts(genesis_block)));
     expect(await Bridge.isHeaderStored(genesis_block['hash'])).to.equal(true);
   });
 

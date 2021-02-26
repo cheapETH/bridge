@@ -9,29 +9,41 @@ import "solidity-rlp/contracts/RLPReader.sol";
 // derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
 
 contract Bridge {
+  uint8 constant ALLOWED_FUTURE_BLOCK_TIME = 15 seconds;
+  bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
+
   using RLPReader for *;
   using Ethash for *;
 
-  function decodeBlockData(bytes memory rlpHeader) internal pure returns (bytes32, uint, uint, bytes32, uint) {
-    uint idx;
+  struct FullHeader {
     bytes32 parent;
-    uint blockNumber;
+    bytes32 uncleHash;
     uint difficulty;
+    uint blockNumber;
+    uint timestamp;
     bytes32 mixHash;
     uint nonce;
+  }
+
+  function decodeBlockData(bytes memory rlpHeader) internal pure returns (FullHeader memory) {
+    FullHeader memory header;
+
+    uint idx;
     RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
 
     while (it.hasNext()) {
-      if ( idx == 0 ) parent = bytes32(it.next().toUint());
-      else if ( idx == 7 ) difficulty = it.next().toUint();
-      else if ( idx == 8 ) blockNumber = it.next().toUint();
-      else if ( idx == 13 ) mixHash = bytes32(it.next().toUint());
-      else if ( idx == 14 ) nonce = it.next().toUint();
+      if ( idx == 0 ) header.parent = bytes32(it.next().toUint());
+      else if ( idx == 1 ) header.uncleHash = bytes32(it.next().toUint());
+      else if ( idx == 7 ) header.difficulty = it.next().toUint();
+      else if ( idx == 8 ) header.blockNumber = it.next().toUint();
+      else if ( idx == 11 ) header.timestamp = it.next().toUint();
+      else if ( idx == 13 ) header.mixHash = bytes32(it.next().toUint());
+      else if ( idx == 14 ) header.nonce = it.next().toUint();
       else it.next();
       idx++;
     }
 
-    return (parent, blockNumber, difficulty, mixHash, nonce);
+    return header;
   }
 
   // really, this isn't a built-in?
@@ -52,18 +64,30 @@ contract Bridge {
     uint24 blockNumber;
     uint232 totalDifficulty;
     bytes32 parentHash;
+
+    uint64 timestamp;
+    uint128 difficulty;
+
+    bool noUncle;
   }
 
   mapping (bytes32 => Header) private headers;
   bytes32 longestChainEndpoint;
 
-  constructor(bytes32 genesisHash, uint24 genesisBlockNumber) public {
-    Header memory newHeader;
-    newHeader.blockNumber = genesisBlockNumber;
-    newHeader.totalDifficulty = 0; // 0 is a fine place to start
-    newHeader.parentHash = 0;
-    headers[genesisHash] = newHeader;
+  constructor(bytes memory genesisHeader) public {
+    bytes32 genesisHash = keccak256(genesisHeader);
+    FullHeader memory header = decodeBlockData(genesisHeader);
 
+    Header memory newHeader;
+    newHeader.blockNumber = uint24(header.blockNumber);
+    newHeader.parentHash = header.parent;
+    newHeader.totalDifficulty = 0; // 0 is a fine place to start
+
+    newHeader.timestamp = uint64(header.timestamp);
+    newHeader.difficulty = uint128(header.difficulty);
+    newHeader.noUncle = header.uncleHash == EMPTY_UNCLE_HASH;
+
+    headers[genesisHash] = newHeader;
     longestChainEndpoint = genesisHash;
   }
 
@@ -73,6 +97,9 @@ contract Bridge {
 
   function getLongestChainEndpoint() public view returns (bytes32 hash) {
     return longestChainEndpoint;
+  }
+
+  function getBlockNumberHash(uint blockNumber) public view returns (bytes32 hash) {
   }
 
   function getHeader(bytes32 blockHash) public view returns (bytes32 parentHash, uint blockNumber, uint totalDifficulty) {
@@ -94,34 +121,40 @@ contract Bridge {
     bytes32 blockHash = keccak256(rlpHeader);
     bytes32 miningHash = getMiningHash(rlpHeader);
 
-    bytes32 decodedParent;
-    uint decodedBlockNumber;
-    uint decodedDifficulty;
-    bytes32 decodedMixHash;
-    uint decodedNonce;
-    (decodedParent, decodedBlockNumber, decodedDifficulty, decodedMixHash, decodedNonce) = decodeBlockData(rlpHeader);
+    FullHeader memory header = decodeBlockData(rlpHeader);
+
+    // confirm block header isn't in the future
+    require(header.timestamp < now + ALLOWED_FUTURE_BLOCK_TIME, "block is in the future");
 
     // verify block is in chain
-    require(isHeaderStored(decodedParent), "parent does not exist");
-    Header storage parentHeader = headers[decodedParent];
-    require(parentHeader.blockNumber == decodedBlockNumber-1, "parent block number is wrong");
+    require(isHeaderStored(header.parent), "parent does not exist");
+    Header memory parentHeader = headers[header.parent];
+    require(parentHeader.blockNumber == header.blockNumber-1, "parent block number is wrong");
 
-    // TODO: confirm difficultly is correct with formula
+    // confirm block is in order
+    require(parentHeader.timestamp <= header.timestamp);
+
+    // confirm difficultly is correct with formula
+    uint expectedDifficulty = calculateDifficulty(parentHeader, header.timestamp);
+    require(header.difficulty == expectedDifficulty, "expected difficulty doesn't match");
 
     // verify block was hard to make
-    // tmp = sha3_512(miningHash + decodedNonce)
-    // hh = sha3_256(tmp + decodedMixHash)
-    uint[16] memory tmp = Ethash.computeS(uint(miningHash), uint(decodedNonce));
-    uint hh = Ethash.computeSha3(tmp, decodedMixHash);
-    // confirm hh * decodedDifficulty < 2**256
-    uint c = hh * decodedDifficulty;
-    require(c / hh == decodedDifficulty, "block difficultly didn't match hash");
+    // tmp = sha3_512(miningHash + header.nonce)
+    // hh = sha3_256(tmp + header.mixHash)
+    uint[16] memory tmp = Ethash.computeS(uint(miningHash), uint(header.nonce));
+    uint hh = Ethash.computeSha3(tmp, header.mixHash);
+    // confirm hh * header.difficulty < 2**256
+    uint c = hh * header.difficulty;
+    require(c / hh == header.difficulty, "block difficultly didn't match hash");
 
     // create block
     Header memory newHeader;
-    newHeader.blockNumber = uint24(decodedBlockNumber);
-    newHeader.totalDifficulty = uint232(parentHeader.totalDifficulty + decodedDifficulty);
-    newHeader.parentHash = decodedParent;
+    newHeader.blockNumber = uint24(header.blockNumber);
+    newHeader.totalDifficulty = uint232(parentHeader.totalDifficulty + header.difficulty);
+    newHeader.parentHash = header.parent;
+    newHeader.timestamp = uint64(header.timestamp);
+    newHeader.difficulty = uint128(header.difficulty);
+    newHeader.noUncle = header.uncleHash == EMPTY_UNCLE_HASH;
 
     // add block to chain
     if (newHeader.totalDifficulty > headers[longestChainEndpoint].totalDifficulty) {
@@ -138,6 +171,52 @@ contract Bridge {
     rlpWithoutNonce[1] = headerLengthBytes[0];
     rlpWithoutNonce[2] = headerLengthBytes[1];
     return keccak256(rlpWithoutNonce);
+  }
+
+  function calculateDifficulty(Header memory parent, uint timestamp) private pure returns (uint) {
+    int x = int((timestamp - parent.timestamp) / 9);
+
+    // take into consideration uncles of parent
+    if (parent.noUncle) {
+      x = 1 - x;
+    } else {
+      x = 2 - x;
+    }
+
+    if (x < -99) {
+      x = -99;
+    }
+
+    x = int(parent.difficulty) + int(parent.difficulty) / 2048 * x;
+
+    // minimum difficulty = 131072
+    if (x < 131072) {
+      x = 131072;
+    }
+
+    uint bombDelayFromParent = 5000000 - 1;
+    if (parent.blockNumber + 1 >= 9200000) {
+      // https://eips.ethereum.org/EIPS/eip-2384
+      bombDelayFromParent = 9000000 - 1;
+    }
+
+    // calculate a fake block number for the ice-age delay
+    // Specification: https://eips.ethereum.org/EIPS/eip-1234
+    uint fakeBlockNumber = 0;
+    if (parent.blockNumber >= bombDelayFromParent) {
+      fakeBlockNumber = parent.blockNumber - bombDelayFromParent;
+    }
+
+    // for the exponential factor
+    uint periodCount = fakeBlockNumber / 100000;
+
+    // the exponential factor, commonly referred to as "the bomb"
+    // diff = diff + 2^(periodCount - 2)
+    if (periodCount > 1) {
+      return uint(x) + 2**(periodCount - 2);
+    }
+
+    return uint(x);
   }
 }
 

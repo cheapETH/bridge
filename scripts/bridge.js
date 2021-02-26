@@ -5,7 +5,8 @@ let sleep = require('util').promisify(setTimeout);
 var rlp = require('rlp');
 
 const MAX_BLOCK_CHUNK = 10;
-const bridgeAddress = "0x76523BB738Ff66d3B83Dde2cA56A930dd20994eF";
+//const bridgeAddress = "0x76523BB738Ff66d3B83Dde2cA56A930dd20994eF";
+const bridgeAddress = null;
 
 console.log("Using bridge at address", bridgeAddress);
 
@@ -38,13 +39,21 @@ async function main() {
     "Running from the address:",
     deployer.address
   );
-
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-	const Bridge = await ethers.getContractAt("Bridge", bridgeAddress);
+  var Bridge;
+  if (bridgeAddress == null) {
+    const genesis_block = await w3.eth.getBlock("latest");
+
+    const BridgeFactory = await ethers.getContractFactory("Bridge");
+    Bridge = await BridgeFactory.deploy(getBlockRlp(genesis_block));
+
+    console.log("Deployed Bridge address:", Bridge.address);
+  } else {
+    Bridge = await ethers.getContractAt("Bridge", bridgeAddress);
+  }
 
   var seen = {};
-
   while (1) {
     var ep = await Bridge.getLongestChainEndpoint();
 
