@@ -84,7 +84,6 @@ contract Bridge {
     );
   }
   
-  // TODO: write function submitHeaders which can submit multiple
   function submitHeaders(bytes[] memory rlpHeaders) public {
     for (uint i = 0; i < rlpHeaders.length; i++) {
       submitHeader(rlpHeaders[i]);
