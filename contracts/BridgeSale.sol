@@ -9,5 +9,6 @@ contract BridgeSale {
   constructor(Bridge input_bridge) public {
     bridge = input_bridge;
   }
+
 }
 

@@ -7,38 +7,19 @@ const bombDelayFromParent = 9000000;
 
 const FORKBLOCK = 11818960;
 
-function getBlockParts(block) {
-  var toHex = function(x) { return (x==0) ? "0x" : w3.utils.toHex(x) };
-  return [
-    block['parentHash'],
-    block['sha3Uncles'],
-    block['miner'],
-    block['stateRoot'],
-    block['transactionsRoot'],
-    block['receiptsRoot'],
-    block['logsBloom'],
-    toHex(block['difficulty']),
-    toHex(block['number']),
-    toHex(block['gasLimit']),
-    toHex(block['gasUsed']),
-    toHex(block['timestamp']),
-    block['extraData'],
-    block['mixHash'],
-    block['nonce']
-  ];
-}
+const lib = require("../scripts/lib");
 
 describe("Hashing function", function() {
   it("Javascript block hash is correct", async function() {
     block = await w3.eth.getBlock(FORKBLOCK-100)
-    var dat = rlp.encode(getBlockParts(block));
+    var dat = rlp.encode(lib.getBlockParts(block));
     expect(w3.utils.soliditySha3(dat)).to.equal(block['hash']);
   });
 });
 
 async function do_add_block(Bridge, bn) {
   add_block = await w3.eth.getBlock(bn);
-  var add_block_rlp = rlp.encode(getBlockParts(add_block));
+  var add_block_rlp = rlp.encode(lib.getBlockParts(add_block));
   const ret = await Bridge.submitHeader(add_block_rlp);
   expect(await Bridge.isHeaderStored(add_block['hash'])).to.equal(true);
 }
@@ -48,7 +29,7 @@ describe("Bridge contract", function() {
     const genesis_block = await w3.eth.getBlock(FORKBLOCK-101)
     const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
-    Bridge = await BridgeFactory.deploy(rlp.encode(getBlockParts(genesis_block)), bombDelayFromParent);
+    Bridge = await BridgeFactory.deploy(rlp.encode(lib.getBlockParts(genesis_block)), bombDelayFromParent);
     expect(await Bridge.isHeaderStored(genesis_block['hash'])).to.equal(true);
   });
 
@@ -71,8 +52,8 @@ describe("Bridge contract", function() {
     expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(false);
     expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(false);
 
-    var add_block_rlp_1 = rlp.encode(getBlockParts(add_block_1));
-    var add_block_rlp_2 = rlp.encode(getBlockParts(add_block_2));
+    var add_block_rlp_1 = rlp.encode(lib.getBlockParts(add_block_1));
+    var add_block_rlp_2 = rlp.encode(lib.getBlockParts(add_block_2));
     const ret = await Bridge.submitHeaders([add_block_rlp_1, add_block_rlp_2]);
 
     expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(true);
@@ -83,7 +64,7 @@ describe("Bridge contract", function() {
     add_block = await w3.eth.getBlock(FORKBLOCK-100)
 
     // broken block has mixhash junk
-    var parts = getBlockParts(add_block);
+    var parts = lib.getBlockParts(add_block);
     parts[13] = "0xa2b382b1939";
 
     var add_block_rlp = rlp.encode(parts);
@@ -93,7 +74,7 @@ describe("Bridge contract", function() {
   it("Bridge doesn't add skip block", async function() {
     add_block = await w3.eth.getBlock(FORKBLOCK-99)
 
-    var add_block_rlp = rlp.encode(getBlockParts(add_block));
+    var add_block_rlp = rlp.encode(lib.getBlockParts(add_block));
     await expect(Bridge.submitHeader(add_block_rlp)).to.be.revertedWith("parent does not exist");
   });
 

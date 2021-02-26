@@ -4,42 +4,21 @@ const USE_DEVETH = true;
 
 if (USE_DEVETH) {
   var w3 = new Web3("https://rpc.deveth.org/");
-  const bombDelayFromParent = 900000000;
+  var bombDelayFromParent = 900000000;
 } else {
   var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
-  const bombDelayFromParent = 9000000;
+  var bombDelayFromParent = 9000000;
 }
 
 let sleep = require('util').promisify(setTimeout);
 var rlp = require('rlp');
+const lib = require('./lib');
 
 const MAX_BLOCK_CHUNK = 10;
 //const bridgeAddress = "0x76523BB738Ff66d3B83Dde2cA56A930dd20994eF";
 const bridgeAddress = null;
 
 console.log("Using bridge at address", bridgeAddress);
-
-// TODO: make this a library with the test
-function getBlockRlp(block) {
-  var toHex = function(x) { return (x==0) ? "0x" : w3.utils.toHex(x) };
-  return rlp.encode([
-    block['parentHash'],
-    block['sha3Uncles'],
-    block['miner'],
-    block['stateRoot'],
-    block['transactionsRoot'],
-    block['receiptsRoot'],
-    block['logsBloom'],
-    toHex(block['difficulty']),
-    toHex(block['number']),
-    toHex(block['gasLimit']),
-    toHex(block['gasUsed']),
-    toHex(block['timestamp']),
-    block['extraData'],
-    block['mixHash'],
-    block['nonce']
-  ]);
-}
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -55,7 +34,7 @@ async function main() {
     const genesis_block = await w3.eth.getBlock("latest");
 
     const BridgeFactory = await ethers.getContractFactory("Bridge");
-    Bridge = await BridgeFactory.deploy(getBlockRlp(genesis_block), bombDelayFromParent);
+    Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block), bombDelayFromParent);
 
     console.log("Deployed Bridge address:", Bridge.address);
   } else {
@@ -90,7 +69,7 @@ async function main() {
     for (var i = 0; i < Math.min(MAX_BLOCK_CHUNK, blocksBehind); i++) {
       const submitBlockNumber = blockNumber+i+1;
       const new_block = await w3.eth.getBlock(submitBlockNumber);
-      hdrs.push(getBlockRlp(new_block));
+      hdrs.push(lib.getBlockRlp(new_block));
     }
     const ret = await Bridge.submitHeaders(hdrs);
     console.log("submitted", hdrs.length, "block headers with tx hash", ret['hash']);
