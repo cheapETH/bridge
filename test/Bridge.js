@@ -26,7 +26,7 @@ async function do_add_block(Bridge, bn) {
 
 describe("Bridge contract", function() {
   beforeEach(async function () {
-    const genesis_block = await w3.eth.getBlock(FORKBLOCK-101)
+    const genesis_block = await w3.eth.getBlock(FORKBLOCK-101);
     const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
     Bridge = await BridgeFactory.deploy(rlp.encode(lib.getBlockParts(genesis_block)), bombDelayFromParent);
