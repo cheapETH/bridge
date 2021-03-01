@@ -4,6 +4,7 @@ The ETH chain and the cheapETH chain. We can assume the ETH chain has ~1000x mor
 
 In order to move value between chains, we need a trusted way to get the state of each chain on to the other chain.
 
+
 == L1 -> L2 Bridge ==
 
 L1 (ETH) is secured by proof of work. Generating a fake proof of work chain is very expensive.
@@ -21,13 +22,13 @@ Think like we are running a "light node" on cheapETH itself. The key part is tha
 
 == L2 -> L1 Bridge ==
 
-This direction is harder for two reasons. One, we can't trust the cheapETH proof of work, since it's much weaker than the Eth proof of work. And two, the gas fees to run the L1 -> L2 bridge are very expensive, since we must submit every block if we want to verify the blockchain.
+This direction is harder for two reasons. One, we can't trust the cheapETH proof of work, since it's much weaker than the Eth proof of work. And two, the gas fees to run the L1 -> L2 bridge are very expensive, since we must submit every block if we want to verify the blockchain. Not acceptable for L1.
 
-The first iteration of the L2 -> L1 bridge will be effectively a multisig with trusted node operators. We'll create a NFT on L1 that entitles you to be a node operator. As a node operator, you'll submit your belief in the state of L2 to a contract in L2. This contract will also track the location of the NFTs, if you transfer it on L1, you can prove the transfer on L2 with the L1 -> L2 bridge.
+The first iteration of the L2 -> L1 bridge will be effectively a multisig with trusted node operators. We'll create a NFT on L1 that entitles you to be a node operator. As a node operator, you'll submit your belief in the state of L2 to a contract in L2 with a signed message.
 
-Really, we have to modify L2 go-ethereum to not allow chain reorgs lower than the trusted state, say 100 blocks back, but with small amounts of value, we can put this off until later.
+The L1 Bridge contract can have the L2 states submitted to it, the contract will confirm that those addresses possess the magic NFT, and when, say 3 out of the 10 confirm the state (can change with moving average), it's treated as the truth and can be used to prove transactions.
 
-The L1 Bridge can have the L2 states submitted to it, the contract will confirm that those addresses possess the magic NFT, and when, say 3 out of the 10 confirm the state, it's treated as the truth and can be used to prove transactions.
+Really, we have to modify L2 go-ethereum to not allow chain reorgs lower than the trusted state, say 100 blocks back, but with small amounts of value, we can put this off until later. This contract would also track the location of the NFTs, if you transfer it on L1, you can prove the transfer on L2 with the L1 -> L2 bridge.
 
 
 == Building ==
