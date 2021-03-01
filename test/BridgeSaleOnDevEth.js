@@ -54,14 +54,17 @@ describe("BridgeSale contract", function() {
     expect(bbn['hash']).to.equal(saleBlockData['hash']);
   });
 
-  it("Deploy BridgeSale contract", async function() {
+  it("Do BridgeSale", async function() {
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
     BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0x7536e392c8598ba8781160cadfbda0f72a0416ee");
     //console.log(BridgeSale);
 
+    txn = await w3.eth.getTransaction(saleTxid);
+    console.log(txn);
 
 
-    BridgeSaleFactory.redeemDeposit(getBlockRlp(saleBlockData),
+
+    //BridgeSaleFactory.redeemDeposit(getBlockRlp(saleBlockData),
 
 
   });

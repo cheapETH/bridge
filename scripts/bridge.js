@@ -1,6 +1,6 @@
 var Web3 = require('web3');
 
-const USE_DEVETH = true;
+const USE_DEVETH = false;
 
 if (USE_DEVETH) {
   var w3 = new Web3("https://rpc.deveth.org/");
