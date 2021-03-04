@@ -1,5 +1,5 @@
 // Send your devETH to the 0xd000000000000000000000000000000000000b1e to smoke it.
-// Smoke 100 devETH, earn 1 cheapETH!
+// Smoke 1000 devETH, earn 1 cheapETH!
 // After the bridgesale is live
 
 // https://expedition.dev/tx/0x5a7a930b16020723a05a9e467749a7ef5c1316e5a97eab2651c586a9deb4547d?rpcUrl=https%3A%2F%2Frpc.deveth.org
@@ -95,8 +95,8 @@ describe("BridgeSale contract", function() {
     await BridgeSale.redeemDeposit(lib.getBlockRlp(saleBlockData), lib.getTransactionRlp(txn), txn['from'], txtrie.key, rlp.encode(proof));
     const endBalance = await provider.getBalance(saleFrom);
 
-    // 0.01 on deveth = 0.0001 on cheapEth 
-    expect(endBalance).to.equal(ethers.utils.parseUnits("0.0001", 18));
+    // 0.01 on deveth = 0.00001 on cheapEth
+    expect(endBalance).to.equal(ethers.utils.parseUnits("0.00001", 18));
   });
 
 });
