@@ -61,7 +61,10 @@ describe("BridgeSale contract", function() {
   it("Transaction hash is correct", async function() {
     txn = await w3.eth.getTransaction(saleTxid);
     console.log(txn);
-    expect(txn['hash']).to.equal(w3.utils.soliditySha3(lib.getTransactionRlp(txn)));
+    const txn_rlp = lib.getTransactionRlp(txn);
+    console.log(txn_rlp);
+    console.log(lib.getTransactionRlp(txn, true));
+    expect(txn['hash']).to.equal(w3.utils.soliditySha3(txn_rlp));
   });
 
   it("Do BridgeSale", async function() {

@@ -2,7 +2,7 @@
 pragma solidity >=0.6.0;
 pragma experimental ABIEncoderV2;
 
-import "./Ethash.sol";
+import "./lib/Ethash.sol";
 import "hardhat/console.sol";
 import "solidity-rlp/contracts/RLPReader.sol";
 
