@@ -16,8 +16,14 @@ async function main() {
 }
 
 var app = express();
+app.set('view engine', 'pug')
+
+/*app.get('/', function(req, res) {
+  res.sendFile('sale.html', { root: 'static' });
+});*/
+
 app.get('/', function(req, res) {
-  res.sendFile('sale.html');
+  res.render('index', { title: 'Hey', message: 'Hello there!', bridgeAddress: bridgeAddress, bridgeSaleAddress: bridgeSaleAddress })
 });
 
 main()
