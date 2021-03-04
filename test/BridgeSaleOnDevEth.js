@@ -58,13 +58,18 @@ describe("BridgeSale contract", function() {
     expect(bbn['hash']).to.equal(saleBlockData['hash']);
   });
 
+  it("Transaction hash is correct", async function() {
+    txn = await w3.eth.getTransaction(saleTxid);
+    console.log(txn);
+    expect(txn['hash']).to.equal(w3.utils.soliditySha3(lib.getTransactionRlp(txn)));
+  });
+
   it("Do BridgeSale", async function() {
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
     BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e");
+    txn = await w3.eth.getTransaction(saleTxid);
     //console.log(BridgeSale);
 
-    txn = await w3.eth.getTransaction(saleTxid);
-    console.log(txn);
 
 
 

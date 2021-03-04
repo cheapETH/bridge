@@ -1,8 +1,8 @@
 var Web3 = require('web3');
 var rlp = require('rlp');
+var toHex = function(x) { return (x==0) ? "0x" : Web3.utils.toHex(x) };
 
 function getBlockParts(block) {
-  var toHex = function(x) { return (x==0) ? "0x" : Web3.utils.toHex(x) };
   return [
     block['parentHash'],
     block['sha3Uncles'],
@@ -27,5 +27,20 @@ function getBlockRlp(block) {
   return rlp.encode(getBlockParts(block));
 }
 
-module.exports = { getBlockParts, getBlockRlp };
+function getTransactionRlp(tx) {
+  const dat = [
+    toHex(tx.nonce),
+    toHex(tx.gasPrice),
+    toHex(tx.gas),
+    tx.to,
+    toHex(tx.value),
+    tx.input, // this right?
+    tx.v,
+    tx.r,
+    tx.s,
+  ];
+  return rlp.encode(dat);
+}
+
+module.exports = { getBlockParts, getBlockRlp, getTransactionRlp };
 
