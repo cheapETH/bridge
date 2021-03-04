@@ -64,9 +64,6 @@ async function main() {
       continue;
     }
 
-    // we will submit some blocks here
-    seen[longestCommitedChainHash] = true;
-
     // new headers to submit
     var hdrs = [];
 
@@ -84,8 +81,18 @@ async function main() {
       const new_block = await w3.eth.getBlock(blockNumber);
       hdrs.push(lib.getBlockRlp(new_block));
     }
-    const ret = await Bridge.submitHeaders(hdrs);
-    console.log("submitted", hdrs.length, "block headers with tx hash", ret['hash']);
+
+    try {
+      const ret = await Bridge.submitHeaders(hdrs);
+      console.log("submitted", hdrs.length, "block headers with tx hash", ret['hash']);
+    } catch(err) {
+      console.log("ERROR SUBMITTING");
+      console.log(err);
+      continue;
+    }
+
+    // we can wait for the transaction now
+    seen[longestCommitedChainHash] = true;
   }
 }
 

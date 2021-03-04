@@ -1,5 +1,9 @@
-// https://expedition.dev/tx/0x0208134aa28fc60d6a09bb30f56c00d2532a4abf040aeed51cefd98044b3c534?rpcUrl=https%3A%2F%2Frpc.deveth.org%2F
-// 0x383cd82ad79be9e6a4ba03d3c2ae4575456a2f20 -> 0x7536e392c8598ba8781160cadfbda0f72a0416ee
+// Send your devETH to the 0xd000000000000000000000000000000000000b1e to smoke it.
+// Smoke 100 devETH, earn 1 cheapETH!
+// After the bridgesale is live
+
+// https://expedition.dev/tx/0x5a7a930b16020723a05a9e467749a7ef5c1316e5a97eab2651c586a9deb4547d?rpcUrl=https%3A%2F%2Frpc.deveth.org
+// 0x7536e392c8598ba8781160cadfbda0f72a0416ee -> 0xd000000000000000000000000000000000000b1e
 
 const { expect } = require("chai");
 const lib = require("../scripts/lib");
@@ -9,10 +13,10 @@ var Web3 = require('web3');
 var w3 = new Web3("https://rpc.deveth.org/");
 var bombDelayFromParent = 900000000;
 
-var finalBlock = 11946735;
-var saleBlock = 11946739;
+const startBlock = 11982090;
+const saleBlock = 11982094;
 
-var saleTxid = "0x0208134aa28fc60d6a09bb30f56c00d2532a4abf040aeed51cefd98044b3c534";
+var saleTxid = "0x5a7a930b16020723a05a9e467749a7ef5c1316e5a97eab2651c586a9deb4547d";
 
 async function do_add_block(Bridge, bn) {
   add_block = await w3.eth.getBlock(bn);
@@ -26,13 +30,13 @@ describe("BridgeSale contract", function() {
     const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
 
-    const genesis_block = await w3.eth.getBlock(finalBlock);
+    const genesis_block = await w3.eth.getBlock(startBlock);
     Bridge = await BridgeFactory.deploy(rlp.encode(lib.getBlockParts(genesis_block)), bombDelayFromParent);
     expect(await Bridge.isHeaderStored(genesis_block['hash'])).to.equal(true);
 
     var hdrs = [];
     for (var i = 1; i < 16; i++) {
-      add_block = await w3.eth.getBlock(finalBlock+i);
+      add_block = await w3.eth.getBlock(startBlock+i);
       var add_block_rlp = rlp.encode(lib.getBlockParts(add_block));
       hdrs.push(add_block_rlp);
     }
@@ -56,7 +60,7 @@ describe("BridgeSale contract", function() {
 
   it("Do BridgeSale", async function() {
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
-    BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0x7536e392c8598ba8781160cadfbda0f72a0416ee");
+    BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e");
     //console.log(BridgeSale);
 
     txn = await w3.eth.getTransaction(saleTxid);
