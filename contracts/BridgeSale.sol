@@ -5,11 +5,12 @@ pragma experimental ABIEncoderV2;
 import "./Bridge.sol";
 import "hardhat/console.sol";
 import "solidity-rlp/contracts/RLPReader.sol";
-import "./lib/RLPWriter.sol";
+import "./lib/Lib_RLPWriter.sol";
+import "./lib/Lib_MerkleTrie.sol";
 
 contract BridgeSale {
   using RLPReader for *;
-  using RLPWriter for *;
+  using Lib_RLPWriter for *;
 
   Bridge immutable bridge;
   address immutable depositOnL1;
@@ -72,26 +73,27 @@ contract BridgeSale {
     uint chainId = (txx.v - 36) / 2;
 
     bytes[] memory raw = new bytes[](9);
-    raw[0] = RLPWriter.writeUint(txx.nonce);
-    raw[1] = RLPWriter.writeUint(txx.gasPrice);
-    raw[2] = RLPWriter.writeUint(txx.gasLimit);
+    raw[0] = Lib_RLPWriter.writeUint(txx.nonce);
+    raw[1] = Lib_RLPWriter.writeUint(txx.gasPrice);
+    raw[2] = Lib_RLPWriter.writeUint(txx.gasLimit);
     if (txx.to == address(0)) {
-      raw[3] = RLPWriter.writeBytes('');
+      raw[3] = Lib_RLPWriter.writeBytes('');
     } else {
-      raw[3] = RLPWriter.writeAddress(txx.to);
+      raw[3] = Lib_RLPWriter.writeAddress(txx.to);
     }
-    raw[4] = RLPWriter.writeUint(txx.value);
-    raw[5] = RLPWriter.writeBytes(txx.data);
-    raw[6] = RLPWriter.writeUint(chainId);
-    raw[7] = RLPWriter.writeBytes(bytes(''));
-    raw[8] = RLPWriter.writeBytes(bytes(''));
-    bytes32 hash = keccak256(RLPWriter.writeList(raw));
+    raw[4] = Lib_RLPWriter.writeUint(txx.value);
+    raw[5] = Lib_RLPWriter.writeBytes(txx.data);
+    raw[6] = Lib_RLPWriter.writeUint(chainId);
+    raw[7] = Lib_RLPWriter.writeBytes(bytes(''));
+    raw[8] = Lib_RLPWriter.writeBytes(bytes(''));
+    bytes32 hash = keccak256(Lib_RLPWriter.writeList(raw));
 
-    address from = ecrecover(hash, 36, txx.r, txx.s);
+    address from = ecrecover(hash, 28, txx.r, txx.s);
+    require(from != address(0x0), "signature verification failed");
     return (from, txx.to, txx.value);
   }
 
-  function redeemDeposit(bytes memory rlpBlockHeader, bytes memory rlpTransaction) public {
+  function redeemDeposit(bytes memory rlpBlockHeader, bytes memory rlpTransaction, address payable inputFrom, bytes memory key, bytes memory proof) public {
     bytes32 blockHash = keccak256(rlpBlockHeader);
     bytes32 transactionHash = keccak256(rlpTransaction);
     require(bridge.isHeaderStored(blockHash), "block is not in Bridge");
@@ -106,8 +108,7 @@ contract BridgeSale {
     bytes32 hash;
     uint24 depth;
     (hash, depth) = bridge.getBlockByNumber(blockNumber);
-    console.log(depth);
-    require(depth >= BLOCK_DEPTH_REQUIRED);
+    require(depth >= BLOCK_DEPTH_REQUIRED, "block not deep enough in chain");
 
     // parse and validate the transaction (do we have to? it's in the block)
     // yes, we have to validate to recover the from address
@@ -115,13 +116,15 @@ contract BridgeSale {
     address to;
     uint value;
     (from, to, value) = decodeTransactionData(rlpTransaction);
+    require(from == inputFrom, "wrong from address");
+    require(to == depositOnL1, "wrong to address");
 
-    // TODO: confirm transaction is in block
+    // confirm transaction is in block
+    bool ret = Lib_MerkleTrie.verifyInclusionProof(key, rlpTransaction, proof, transactionsRoot);
+    require(ret, "transaction is in block");
 
-    // TODO: confirm to address is deposit address
-
-    // TODO: transfer value (with ratio) of coins to from address
-
+    // transfer value (with ratio) of coins to from address
+    inputFrom.transfer(value/100);
   }
 }
 

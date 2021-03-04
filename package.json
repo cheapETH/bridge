@@ -14,6 +14,7 @@
     "ethers": "^5.0.31",
     "hardhat": "^2.0.11",
     "hardhat-gas-reporter": "^1.0.4",
+    "merkle-patricia-tree": "^4.1.0",
     "solidity-rlp": "^2.0.3"
   }
 }

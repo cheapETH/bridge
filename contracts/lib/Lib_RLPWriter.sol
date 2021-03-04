@@ -9,7 +9,7 @@ import { Lib_BytesUtils } from "./Lib_BytesUtils.sol";
  * @title Lib_RLPWriter
  * @author Bakaoh (with modifications)
  */
-library RLPWriter {
+library Lib_RLPWriter {
 
     /**********************
      * Internal Functions *

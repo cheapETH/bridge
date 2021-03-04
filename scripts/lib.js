@@ -2,6 +2,9 @@ var Web3 = require('web3');
 var rlp = require('rlp');
 var toHex = function(x) { return (x==0) ? "0x" : Web3.utils.toHex(x) };
 
+const mpt = require('merkle-patricia-tree');
+const Trie = mpt.BaseTrie;
+
 function getBlockRlp(block) {
   const dat = [
     block['parentHash'],
@@ -38,5 +41,42 @@ function getTransactionRlp(tx) {
   return rlp.encode(dat);
 }
 
-module.exports = { getBlockRlp, getTransactionRlp };
+async function getTransactionTrie(w3, blockNumber, txId) {
+  const trie = new Trie();
+  var saleKey = null;
+  var saleTxRlp = null;
+
+  saleBlockData = await w3.eth.getBlock(blockNumber);
+
+  for (var i = 0; i < saleBlockData['transactions'].length; i++) {
+    console.log(i, saleBlockData['transactions'][i]);
+    const txn = await w3.eth.getTransaction(saleBlockData['transactions'][i]);
+    const txn_rlp = getTransactionRlp(txn);
+    const key = rlp.encode(i);
+    if (saleBlockData['transactions'][i] == txId) {
+      saleKey = key;
+      saleTxRlp = txn_rlp;
+    }
+    await trie.put(key, txn_rlp);
+  }
+
+  return {"trie": trie, "key": saleKey, "value": saleTxRlp};
+}
+
+const fromHexString = function(str) {
+  if (typeof str === 'string' && str.startsWith('0x')) {
+    return Buffer.from(str.slice(2), 'hex')
+  }
+  return Buffer.from(str)
+}
+
+const toHexString = function(inp) {
+  if (typeof inp === 'number') {
+    return BigNumber.from(inp).toHexString()
+  } else {
+    return '0x' + fromHexString(inp).toString('hex')
+  }
+}
+
+module.exports = { getBlockRlp, getTransactionRlp, fromHexString, toHexString, getTransactionTrie };
 

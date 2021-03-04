@@ -8,6 +8,9 @@
 const { expect } = require("chai");
 const lib = require("../scripts/lib");
 
+const mpt = require('merkle-patricia-tree');
+const Trie = mpt.BaseTrie;
+
 var rlp = require('rlp');
 var Web3 = require('web3');
 var w3 = new Web3("https://rpc.deveth.org/");
@@ -16,6 +19,7 @@ var bombDelayFromParent = 900000000;
 const startBlock = 11982090;
 const saleBlock = 11982094;
 
+var saleFrom = "0x7536e392c8598ba8781160cadfbda0f72a0416ee";
 var saleTxid = "0x5a7a930b16020723a05a9e467749a7ef5c1316e5a97eab2651c586a9deb4547d";
 
 async function do_add_block(Bridge, bn) {
@@ -27,7 +31,6 @@ async function do_add_block(Bridge, bn) {
 
 describe("BridgeSale contract", function() {
   before(async function () {
-    const [owner] = await ethers.getSigners();
     const BridgeFactory = await ethers.getContractFactory("Bridge");
 
     const genesis_block = await w3.eth.getBlock(startBlock);
@@ -66,12 +69,48 @@ describe("BridgeSale contract", function() {
     expect(txn['hash']).to.equal(w3.utils.soliditySha3(txn_rlp));
   });
 
+  it("Confirm transaction in block with proof", async function() {
+    const txtrie = await lib.getTransactionTrie(w3, saleBlock, saleTxid);
+    const trie = txtrie.trie;
+    console.log("found sale", txtrie.key, txtrie.value);
+
+    expect(lib.toHexString(trie.root)).to.equal(saleBlockData['transactionsRoot']);
+
+    const proof = await Trie.createProof(trie, txtrie.key);
+    console.log(proof);
+    console.log(rlp.decode(proof[0]));
+
+    const value = await Trie.verifyProof(trie.root, txtrie.key, proof)
+    console.log(value);
+  });
+
   it("Do BridgeSale", async function() {
+    const [owner] = await ethers.getSigners();
+    const provider = owner.provider;
+
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
     BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e");
+
+    // fund the bridgesale with 1 ETH
+    await owner.sendTransaction({to: BridgeSale.address, value: ethers.utils.parseUnits("1.0", 18)});
+    const bsBalance = await provider.getBalance(BridgeSale.address);
+
+    // get the path and rlpEncodedNodes
+    const txtrie = await lib.getTransactionTrie(w3, saleBlock, saleTxid);
+    const proof = await Trie.createProof(txtrie.trie, txtrie.key);
+
+    // submit the transaction to claim
     txn = await w3.eth.getTransaction(saleTxid);
 
-    await BridgeSale.redeemDeposit(lib.getBlockRlp(saleBlockData), lib.getTransactionRlp(txn));
+    const startBalance = await provider.getBalance(saleFrom);
+    expect(startBalance).to.equal(0);
+    await BridgeSale.redeemDeposit(lib.getBlockRlp(saleBlockData), lib.getTransactionRlp(txn), txn['from'], txtrie.key, rlp.encode(proof));
+    const endBalance = await provider.getBalance(saleFrom);
+
+    // 0.01 on deveth = 0.0001 on cheapEth 
+    expect(endBalance).to.equal(ethers.utils.parseUnits("0.0001", 18));
+
+    console.log(startBalance, endBalance);
   });
 
 });
