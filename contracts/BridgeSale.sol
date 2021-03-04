@@ -4,14 +4,11 @@ pragma experimental ABIEncoderV2;
 
 import "./Bridge.sol";
 import "hardhat/console.sol";
-import "solidity-rlp/contracts/RLPReader.sol";
+import "./lib/Lib_RLPReader.sol";
 import "./lib/Lib_RLPWriter.sol";
 import "./lib/Lib_MerkleTrie.sol";
 
 contract BridgeSale {
-  using RLPReader for *;
-  using Lib_RLPWriter for *;
-
   Bridge immutable bridge;
   address immutable depositOnL1;
   uint8 constant BLOCK_DEPTH_REQUIRED = 5;
@@ -29,17 +26,10 @@ contract BridgeSale {
   }
 
   function decodeBlockData(bytes memory rlpHeader) internal pure returns (bytes32, uint) {
-    uint idx;
-    RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
+    Lib_RLPReader.RLPItem[] memory nodes = Lib_RLPReader.readList(rlpHeader);
 
-    bytes32 transactionsRoot;
-    uint blockNumber;
-    while (it.hasNext()) {
-      if ( idx == 4 ) transactionsRoot = bytes32(it.next().toUint());
-      else if ( idx == 8 ) blockNumber = it.next().toUint();
-      else it.next();
-      idx++;
-    }
+    bytes32 transactionsRoot = Lib_RLPReader.readBytes32(nodes[4]);
+    uint blockNumber = Lib_RLPReader.readUint256(nodes[8]);
 
     return (transactionsRoot, blockNumber);
   }
@@ -57,17 +47,18 @@ contract BridgeSale {
   }
 
   function decodeTransactionData(bytes memory rlpHeader) internal pure returns (address, address, uint) {
-    RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
+    Lib_RLPReader.RLPItem[] memory nodes = Lib_RLPReader.readList(rlpHeader);
+
     Transaction memory txx = Transaction({
-      nonce: it.next().toUint(),
-      gasPrice: it.next().toUint(),
-      gasLimit: it.next().toUint(),
-      to: it.next().toAddress(),
-      value: it.next().toUint(),
-      data: it.next().toBytes(),
-      v: it.next().toUint(),
-      r: bytes32(it.next().toUint()),
-      s: bytes32(it.next().toUint())
+      nonce: Lib_RLPReader.readUint256(nodes[0]),
+      gasPrice: Lib_RLPReader.readUint256(nodes[1]),
+      gasLimit: Lib_RLPReader.readUint256(nodes[2]),
+      to: Lib_RLPReader.readAddress(nodes[3]),
+      value: Lib_RLPReader.readUint256(nodes[4]),
+      data: Lib_RLPReader.readBytes(nodes[5]),
+      v: Lib_RLPReader.readUint256(nodes[6]),
+      r: Lib_RLPReader.readBytes32(nodes[7]),
+      s: Lib_RLPReader.readBytes32(nodes[8])
     });
 
     uint chainId = (txx.v - 36) / 2;

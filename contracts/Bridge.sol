@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./lib/Ethash.sol";
 import "hardhat/console.sol";
-import "solidity-rlp/contracts/RLPReader.sol";
+import "./lib/Lib_RLPReader.sol";
 
 // derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
 
@@ -13,7 +13,6 @@ contract Bridge {
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
   uint32 immutable bombDelayFromParent;
 
-  using RLPReader for *;
   using Ethash for *;
 
   struct FullHeader {
@@ -27,22 +26,16 @@ contract Bridge {
   }
 
   function decodeBlockData(bytes memory rlpHeader) internal pure returns (FullHeader memory) {
-    FullHeader memory header;
-
-    uint idx;
-    RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
-
-    while (it.hasNext()) {
-      if ( idx == 0 ) header.parent = bytes32(it.next().toUint());
-      else if ( idx == 1 ) header.uncleHash = bytes32(it.next().toUint());
-      else if ( idx == 7 ) header.difficulty = it.next().toUint();
-      else if ( idx == 8 ) header.blockNumber = it.next().toUint();
-      else if ( idx == 11 ) header.timestamp = it.next().toUint();
-      else if ( idx == 13 ) header.mixHash = bytes32(it.next().toUint());
-      else if ( idx == 14 ) header.nonce = it.next().toUint();
-      else it.next();
-      idx++;
-    }
+    Lib_RLPReader.RLPItem[] memory nodes = Lib_RLPReader.readList(rlpHeader);
+    FullHeader memory header = FullHeader({
+      parent: Lib_RLPReader.readBytes32(nodes[0]),
+      uncleHash: Lib_RLPReader.readBytes32(nodes[1]),
+      difficulty: Lib_RLPReader.readUint256(nodes[7]),
+      blockNumber: Lib_RLPReader.readUint256(nodes[8]),
+      timestamp: Lib_RLPReader.readUint256(nodes[11]),
+      mixHash: Lib_RLPReader.readBytes32(nodes[13]),
+      nonce: Lib_RLPReader.readUint256(nodes[14])
+    });
 
     return header;
   }

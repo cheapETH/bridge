@@ -4,6 +4,8 @@ The ETH chain and the cheapETH chain. We can assume the ETH chain has ~1000x mor
 
 In order to move value between chains, we need a trusted way to get the state of each chain on to the other chain.
 
+Thanks to Optimism for most of the Solidity libraries (https://github.com/ethereum-optimism/contracts)
+
 
 == L1 -> L2 Bridge ==
 
