@@ -63,7 +63,6 @@ describe("BridgeSale contract", function() {
     console.log(txn);
     const txn_rlp = lib.getTransactionRlp(txn);
     console.log(txn_rlp);
-    console.log(lib.getTransactionRlp(txn, true));
     expect(txn['hash']).to.equal(w3.utils.soliditySha3(txn_rlp));
   });
 
