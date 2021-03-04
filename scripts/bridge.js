@@ -17,6 +17,7 @@ const lib = require('./lib');
 const MAX_BLOCK_CHUNK = 10;
 
 //const bridgeAddress = "0xbaB8eF7C63E15D2C72c2d0E63D1B56a006F1737A";
+//const bridgeAddress = "0x7721c350C98Ee31c089fd0e712A4Ce08A7070dAa";
 const bridgeAddress = null;
 
 console.log("Using bridge at address", bridgeAddress);
@@ -70,7 +71,7 @@ async function main() {
     // might rewind a bit for chain reorg
     while (1) {
       const supposedCurrentBlock = await w3.eth.getBlock(blockNumber);
-      if (Bridge.isHeaderStored(supposedCurrentBlock['hash'])) break;
+      if (await Bridge.isHeaderStored(supposedCurrentBlock['hash'])) break;
       blockNumber -= 1;
       console.log("rewinding...");
     }
