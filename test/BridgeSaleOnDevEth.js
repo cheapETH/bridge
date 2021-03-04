@@ -46,13 +46,7 @@ describe("BridgeSale contract", function() {
     await Bridge.submitHeaders(hdrs);
 
     saleBlockData = await w3.eth.getBlock(saleBlock);
-    console.log(saleBlockData);
   });
-
-  /*it("Get proof", async function() {
-    var ret = await w3.eth.getProof("0x7536e392c8598ba8781160cadfbda0f72a0416ee", [], saleBlock);
-    console.log(ret);
-  });*/
 
   it("Sale block is present with correct hash", async function() {
     expect(await Bridge.isHeaderStored(saleBlockData['hash'])).to.equal(true);
@@ -63,25 +57,19 @@ describe("BridgeSale contract", function() {
 
   it("Transaction hash is correct", async function() {
     txn = await w3.eth.getTransaction(saleTxid);
-    console.log(txn);
     const txn_rlp = lib.getTransactionRlp(txn);
-    console.log(txn_rlp);
     expect(txn['hash']).to.equal(w3.utils.soliditySha3(txn_rlp));
   });
 
   it("Confirm transaction in block with proof", async function() {
     const txtrie = await lib.getTransactionTrie(w3, saleBlock, saleTxid);
     const trie = txtrie.trie;
-    console.log("found sale", txtrie.key, txtrie.value);
 
     expect(lib.toHexString(trie.root)).to.equal(saleBlockData['transactionsRoot']);
 
     const proof = await Trie.createProof(trie, txtrie.key);
-    console.log(proof);
-    console.log(rlp.decode(proof[0]));
-
     const value = await Trie.verifyProof(trie.root, txtrie.key, proof)
-    console.log(value);
+    expect(lib.toHexString(value)).to.equal(lib.toHexString(txtrie.value));
   });
 
   it("Do BridgeSale", async function() {
@@ -109,8 +97,6 @@ describe("BridgeSale contract", function() {
 
     // 0.01 on deveth = 0.0001 on cheapEth 
     expect(endBalance).to.equal(ethers.utils.parseUnits("0.0001", 18));
-
-    console.log(startBalance, endBalance);
   });
 
 });

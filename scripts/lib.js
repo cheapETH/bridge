@@ -49,7 +49,7 @@ async function getTransactionTrie(w3, blockNumber, txId) {
   saleBlockData = await w3.eth.getBlock(blockNumber);
 
   for (var i = 0; i < saleBlockData['transactions'].length; i++) {
-    console.log(i, saleBlockData['transactions'][i]);
+    //console.log(i, saleBlockData['transactions'][i]);
     const txn = await w3.eth.getTransaction(saleBlockData['transactions'][i]);
     const txn_rlp = getTransactionRlp(txn);
     const key = rlp.encode(i);
