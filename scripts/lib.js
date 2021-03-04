@@ -2,8 +2,8 @@ var Web3 = require('web3');
 var rlp = require('rlp');
 var toHex = function(x) { return (x==0) ? "0x" : Web3.utils.toHex(x) };
 
-function getBlockParts(block) {
-  return [
+function getBlockRlp(block) {
+  const dat = [
     block['parentHash'],
     block['sha3Uncles'],
     block['miner'],
@@ -20,11 +20,7 @@ function getBlockParts(block) {
     block['mixHash'],
     block['nonce']
   ];
-}
-
-// TODO: make this a library with the test
-function getBlockRlp(block) {
-  return rlp.encode(getBlockParts(block));
+  return rlp.encode(dat);
 }
 
 function getTransactionRlp(tx) {
@@ -42,5 +38,5 @@ function getTransactionRlp(tx) {
   return rlp.encode(dat);
 }
 
-module.exports = { getBlockParts, getBlockRlp, getTransactionRlp };
+module.exports = { getBlockRlp, getTransactionRlp };
 

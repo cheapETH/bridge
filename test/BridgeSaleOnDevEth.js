@@ -20,7 +20,7 @@ var saleTxid = "0x5a7a930b16020723a05a9e467749a7ef5c1316e5a97eab2651c586a9deb454
 
 async function do_add_block(Bridge, bn) {
   add_block = await w3.eth.getBlock(bn);
-  var add_block_rlp = rlp.encode(lib.getBlockParts(add_block));
+  var add_block_rlp = lib.getBlockRlp(add_block);
   const ret = await Bridge.submitHeader(add_block_rlp);
   expect(await Bridge.isHeaderStored(add_block['hash'])).to.equal(true);
 }
@@ -31,13 +31,13 @@ describe("BridgeSale contract", function() {
     const BridgeFactory = await ethers.getContractFactory("Bridge");
 
     const genesis_block = await w3.eth.getBlock(startBlock);
-    Bridge = await BridgeFactory.deploy(rlp.encode(lib.getBlockParts(genesis_block)), bombDelayFromParent);
+    Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block), bombDelayFromParent);
     expect(await Bridge.isHeaderStored(genesis_block['hash'])).to.equal(true);
 
     var hdrs = [];
     for (var i = 1; i < 16; i++) {
       add_block = await w3.eth.getBlock(startBlock+i);
-      var add_block_rlp = rlp.encode(lib.getBlockParts(add_block));
+      var add_block_rlp = lib.getBlockRlp(add_block);
       hdrs.push(add_block_rlp);
     }
     await Bridge.submitHeaders(hdrs);
@@ -68,8 +68,8 @@ describe("BridgeSale contract", function() {
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
     BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e");
     txn = await w3.eth.getTransaction(saleTxid);
-    //console.log(BridgeSale);
-    //BridgeSaleFactory.redeemDeposit(getBlockRlp(saleBlockData),
+
+    BridgeSale.redeemDeposit(lib.getBlockRlp(saleBlockData), lib.getTransactionRlp(txn));
   });
 
 });
