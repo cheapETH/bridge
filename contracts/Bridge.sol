@@ -9,7 +9,7 @@ import "solidity-rlp/contracts/RLPReader.sol";
 // derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
 
 contract Bridge {
-  uint8 constant ALLOWED_FUTURE_BLOCK_TIME = 15 seconds;
+  uint8 constant ALLOWED_FUTURE_BLOCK_TIME = 5 minutes;
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
   uint32 immutable bombDelayFromParent;
 
