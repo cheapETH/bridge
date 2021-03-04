@@ -15,7 +15,8 @@ var rlp = require('rlp');
 const lib = require('./lib');
 
 const MAX_BLOCK_CHUNK = 10;
-//const bridgeAddress = "0x76523BB738Ff66d3B83Dde2cA56A930dd20994eF";
+
+//const bridgeAddress = "0xbaB8eF7C63E15D2C72c2d0E63D1B56a006F1737A";
 const bridgeAddress = null;
 
 console.log("Using bridge at address", bridgeAddress);
@@ -43,17 +44,16 @@ async function main() {
 
   var seen = {};
   while (1) {
-    var ep = await Bridge.getLongestChainEndpoint();
-
-    console.log(ep);
-    if (seen[ep]) {
+    const longestCommitedChainHash = await Bridge.getLongestChainEndpoint();
+    console.log("longestCommitedChainHash:", longestCommitedChainHash);
+    if (seen[longestCommitedChainHash]) {
       await sleep(5000);
       continue;
     }
 
-    var hdr = await Bridge.getHeader(ep);
-    console.log(hdr);
+    var hdr = await Bridge.getHeader(longestCommitedChainHash);
     var blockNumber = hdr['blockNumber'].toNumber();
+
     const latestBlock = await w3.eth.getBlock('latest');
     const blocksBehind = latestBlock['number'] - blockNumber;
     console.log("we are at", blockNumber, "which is", blocksBehind, "blocks behind", latestBlock['number']);
@@ -63,12 +63,25 @@ async function main() {
       await sleep(5000);
       continue;
     }
-    seen[ep] = true;
 
+    // we will submit some blocks here
+    seen[longestCommitedChainHash] = true;
+
+    // new headers to submit
     var hdrs = [];
-    for (var i = 0; i < Math.min(MAX_BLOCK_CHUNK, blocksBehind); i++) {
-      const submitBlockNumber = blockNumber+i+1;
-      const new_block = await w3.eth.getBlock(submitBlockNumber);
+
+    // might rewind a bit for chain reorg
+    while (1) {
+      const supposedCurrentBlock = await w3.eth.getBlock(blockNumber);
+      if (Bridge.isHeaderStored(supposedCurrentBlock['hash'])) break;
+      blockNumber -= 1;
+      console.log("rewinding...");
+    }
+
+    console.log("syncing from block", blockNumber);
+    while (hdrs.length < MAX_BLOCK_CHUNK && blockNumber != latestBlock['number']) {
+      blockNumber += 1;
+      const new_block = await w3.eth.getBlock(blockNumber);
       hdrs.push(lib.getBlockRlp(new_block));
     }
     const ret = await Bridge.submitHeaders(hdrs);
