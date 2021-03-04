@@ -1,11 +1,13 @@
 var Web3 = require('web3');
 
-const USE_DEVETH = false;
+const USE_DEVETH = process.env['NETWORK'] == "deveth";
 
 if (USE_DEVETH) {
+  console.log("Deploying bridge to deveth");
   var w3 = new Web3("https://rpc.deveth.org/");
   var bombDelayFromParent = 900000000;
 } else {
+  console.log("Deploying bridge to mainnet");
   var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
   var bombDelayFromParent = 9000000;
 }
@@ -16,9 +18,7 @@ const lib = require('./lib');
 
 const MAX_BLOCK_CHUNK = 10;
 
-//const bridgeAddress = "0xbaB8eF7C63E15D2C72c2d0E63D1B56a006F1737A";
-//const bridgeAddress = "0x7721c350C98Ee31c089fd0e712A4Ce08A7070dAa";
-const bridgeAddress = null;
+const bridgeAddress = process.env['BRIDGE'];
 
 console.log("Using bridge at address", bridgeAddress);
 
