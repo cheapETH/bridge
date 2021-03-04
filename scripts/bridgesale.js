@@ -4,6 +4,7 @@ const bridgeAddress = process.env['BRIDGE'];
 console.log("Using bridge at address", bridgeAddress);
 
 var bridgeSaleAddress = process.env['BRIDGESALE'];
+var Bridge, BridgeSale;
 
 async function main() {
   if (bridgeSaleAddress == null) {
@@ -13,6 +14,7 @@ async function main() {
   }
 
   console.log("BridgeSale deployed at", bridgeSaleAddress);
+  Bridge = await ethers.getContractAt("Bridge", bridgeAddress);
 }
 
 var app = express();
@@ -22,8 +24,15 @@ app.set('view engine', 'pug')
   res.sendFile('sale.html', { root: 'static' });
 });*/
 
-app.get('/', function(req, res) {
-  res.render('index', { title: 'Hey', message: 'Hello there!', bridgeAddress: bridgeAddress, bridgeSaleAddress: bridgeSaleAddress })
+app.get('/', async function(req, res) {
+  const bridgeHash = await Bridge.getLongestChainEndpoint();
+  const bridgeBlock = (await Bridge.getHeader(bridgeHash))[1];
+  res.render('index', { title: 'cheapETH Bridge', bridgeBlock: bridgeBlock, bridgeAddress: bridgeAddress, bridgeSaleAddress: bridgeSaleAddress })
+});
+
+app.get('/api/:account', (req, res) => {
+  const address = req.params.account;
+  res.send("<h3>Claimable transactions for "+address+"</h3>")
 });
 
 main()
