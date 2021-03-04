@@ -82,14 +82,8 @@ async function main() {
       hdrs.push(lib.getBlockRlp(new_block));
     }
 
-    try {
-      const ret = await Bridge.submitHeaders(hdrs);
-      console.log("submitted", hdrs.length, "block headers with tx hash", ret['hash']);
-    } catch(err) {
-      console.log("ERROR SUBMITTING");
-      console.log(err);
-      continue;
-    }
+    const ret = await Bridge.submitHeaders(hdrs);
+    console.log("submitted", hdrs.length, "block headers with tx hash", ret['hash']);
 
     // we can wait for the transaction now
     seen[longestCommitedChainHash] = true;

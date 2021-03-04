@@ -69,13 +69,7 @@ describe("BridgeSale contract", function() {
     BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e");
     txn = await w3.eth.getTransaction(saleTxid);
     //console.log(BridgeSale);
-
-
-
-
     //BridgeSaleFactory.redeemDeposit(getBlockRlp(saleBlockData),
-
-
   });
 
 });
