@@ -12,6 +12,7 @@
     "chai": "^4.3.0",
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.31",
+    "express": "^4.17.1",
     "hardhat": "^2.0.11",
     "hardhat-gas-reporter": "^1.0.4",
     "merkle-patricia-tree": "^4.1.0"

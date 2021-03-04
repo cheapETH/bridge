@@ -51,5 +51,8 @@ Using yarn, hardhat, and waffle
 
 # npx hardhat run scripts/bridge.js --network cheapeth
 
+== Deploying Sale ==
+
+# BRIDGE=0x8168a8c43F1943EcC812ef1b8dE19a897c16488e npx hardhat run scripts/bridgesale.js --network cheapeth
 
 
