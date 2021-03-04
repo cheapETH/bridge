@@ -115,7 +115,7 @@ contract BridgeSale {
     require(ret, "transaction is in block");
 
     // transfer value (with ratio) of coins to from address
-    inputFrom.transfer(value/1000);
+    inputFrom.transfer(value/100);
   }
 }
 
