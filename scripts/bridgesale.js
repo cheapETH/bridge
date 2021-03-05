@@ -21,10 +21,11 @@ var Bridge, BridgeSale;
 
 async function main() {
   if (bridgeSaleAddress == null) {
+    const [deployer] = await ethers.getSigners();
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
     BridgeSale = await BridgeSaleFactory.deploy(bridgeAddress, "0xd000000000000000000000000000000000000b1e", 787);
     bridgeSaleAddress = BridgeSale.address;
-    await owner.sendTransaction({to: BridgeSale.address, value: ethers.utils.parseUnits("0.01", 18)});
+    await deployer.sendTransaction({to: BridgeSale.address, value: ethers.utils.parseUnits("0.01", 18)});
   } else {
     BridgeSale = await ethers.getContractAt("BridgeSale", bridgeSaleAddress)
 	}
