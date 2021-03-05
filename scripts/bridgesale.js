@@ -21,13 +21,20 @@ const DOOBIE = "0xD000000000000000000000000000000000000B1e";
 var bridgeSaleAddress = process.env['BRIDGESALE'];
 var Bridge, BridgeSale;
 
+var claimedAll = {};
+
 async function claimTransaction(txId) {
+  if (claimedAll[txId] === true) {
+    return false;
+  }
+
   const txn = await dw3.eth.getTransaction(txId);
   console.log("CLAIMING", txId, "FROM", txn.from);
   
   const claimed = await BridgeSale.isTransactionClaimed(txId);
   if (claimed) {
-    console.log("already claimed");
+    claimedAll[txId] = true;
+    console.log("already claimed in contract");
     return false;
   }
 
@@ -47,6 +54,7 @@ async function claimTransaction(txId) {
   const proof = await Trie.createProof(txtrie.trie, txtrie.key);
   const ret = await BridgeSale.redeemDeposit(lib.getBlockRlp(block), lib.getTransactionRlp(txn), txn['from'], txtrie.key, rlp.encode(proof));
   console.log(ret);
+  claimedAll[txId] = true;
   return true;
 }
 
