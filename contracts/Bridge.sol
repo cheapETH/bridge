@@ -94,6 +94,7 @@ contract Bridge {
   }
 
   // walk back the blockchain until we find this block number
+  // TODO: this shouldn't be O(n), as it can make old tx unclaimable
   function getBlockByNumber(uint blockNumber) public view returns (bytes32 hash, uint24 depth) {
     bytes32 ptr = longestChainEndpoint;
     uint24 retdepth = 0;
