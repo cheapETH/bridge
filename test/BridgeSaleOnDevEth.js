@@ -77,7 +77,7 @@ describe("BridgeSale contract", function() {
     const provider = owner.provider;
 
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
-    BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e");
+    BridgeSale = await BridgeSaleFactory.deploy(Bridge.address, "0xd000000000000000000000000000000000000b1e", 787);
 
     // fund the bridgesale with 1 ETH
     await owner.sendTransaction({to: BridgeSale.address, value: ethers.utils.parseUnits("1.0", 18)});

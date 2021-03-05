@@ -11,14 +11,16 @@ import "./lib/Lib_MerkleTrie.sol";
 contract BridgeSale {
   Bridge immutable bridge;
   address immutable depositOnL1;
+  uint16 immutable chainIdOnL1;
   uint8 constant BLOCK_DEPTH_REQUIRED = 5;
 
   // prevent double spend with the same tx
   mapping (bytes32 => bool) private seenTransactions;
 
-  constructor(Bridge input_bridge, address dep) public {
+  constructor(Bridge input_bridge, address dep, uint16 chainId) public {
     bridge = input_bridge;
     depositOnL1 = dep;
+    chainIdOnL1 = chainId;
   }
 
   receive() external payable {
@@ -46,7 +48,7 @@ contract BridgeSale {
     bytes32 s;
   }
 
-  function decodeTransactionData(bytes memory rlpHeader) internal pure returns (address, address, uint) {
+  function decodeTransactionData(bytes memory rlpHeader) internal view returns (address, address, uint) {
     Lib_RLPReader.RLPItem[] memory nodes = Lib_RLPReader.readList(rlpHeader);
 
     Transaction memory txx = Transaction({
@@ -61,8 +63,6 @@ contract BridgeSale {
       s: Lib_RLPReader.readBytes32(nodes[8])
     });
 
-    uint chainId = (txx.v - 36) / 2;
-
     bytes[] memory raw = new bytes[](9);
     raw[0] = Lib_RLPWriter.writeUint(txx.nonce);
     raw[1] = Lib_RLPWriter.writeUint(txx.gasPrice);
@@ -74,12 +74,12 @@ contract BridgeSale {
     }
     raw[4] = Lib_RLPWriter.writeUint(txx.value);
     raw[5] = Lib_RLPWriter.writeBytes(txx.data);
-    raw[6] = Lib_RLPWriter.writeUint(chainId);
+    raw[6] = Lib_RLPWriter.writeUint(chainIdOnL1);
     raw[7] = Lib_RLPWriter.writeBytes(bytes(''));
     raw[8] = Lib_RLPWriter.writeBytes(bytes(''));
     bytes32 hash = keccak256(Lib_RLPWriter.writeList(raw));
 
-    address from = ecrecover(hash, 28, txx.r, txx.s);
+    address from = ecrecover(hash, uint8(txx.v - chainIdOnL1 * 2 - 8), txx.r, txx.s);
     require(from != address(0x0), "signature verification failed");
     return (from, txx.to, txx.value);
   }
