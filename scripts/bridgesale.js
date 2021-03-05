@@ -1,4 +1,5 @@
 var express = require('express');
+let sleep = require('util').promisify(setTimeout);
 
 var rlp = require('rlp');
 var Web3 = require('web3');
@@ -15,15 +16,45 @@ const bridgeAddress = process.env['BRIDGE'];
 console.log("Using bridge at address", bridgeAddress);
 
 var txId = process.env['TXID'];
+const DOOBIE = "0xD000000000000000000000000000000000000B1e";
 
 var bridgeSaleAddress = process.env['BRIDGESALE'];
 var Bridge, BridgeSale;
+
+async function claimTransaction(txId) {
+  const txn = await dw3.eth.getTransaction(txId);
+  console.log("CLAIMING", txId, "FROM", txn.from);
+  
+  const claimed = await BridgeSale.isTransactionClaimed(txId);
+  if (claimed) {
+    console.log("already claimed");
+    return false;
+  }
+
+  const bridgeHash = await Bridge.getLongestChainEndpoint();
+  const bridgeBlock = (await Bridge.getHeader(bridgeHash))[1];
+
+
+  if (txn.blockNumber + 5 > bridgeBlock) {
+    console.log("too early");
+    return false;
+  }
+
+  console.log(txn);
+
+  const block = await dw3.eth.getBlock(txn.blockNumber)
+  const txtrie = await lib.getTransactionTrie(dw3, txn.blockNumber, txId);
+  const proof = await Trie.createProof(txtrie.trie, txtrie.key);
+  const ret = await BridgeSale.redeemDeposit(lib.getBlockRlp(block), lib.getTransactionRlp(txn), txn['from'], txtrie.key, rlp.encode(proof));
+  console.log(ret);
+  return true;
+}
 
 async function main() {
   if (bridgeSaleAddress == null) {
     const [deployer] = await ethers.getSigners();
     const BridgeSaleFactory = await ethers.getContractFactory("BridgeSale");
-    BridgeSale = await BridgeSaleFactory.deploy(bridgeAddress, "0xd000000000000000000000000000000000000b1e", 787);
+    BridgeSale = await BridgeSaleFactory.deploy(bridgeAddress, DOOBIE, 787);
     bridgeSaleAddress = BridgeSale.address;
     await deployer.sendTransaction({to: BridgeSale.address, value: ethers.utils.parseUnits("0.01", 18)});
   } else {
@@ -33,21 +64,25 @@ async function main() {
   console.log("BridgeSale deployed at", bridgeSaleAddress);
   Bridge = await ethers.getContractAt("Bridge", bridgeAddress);
 
-	if (txId != null) {
-		const bridgeHash = await Bridge.getLongestChainEndpoint();
-		const bridgeBlock = (await Bridge.getHeader(bridgeHash))[1];
+  var back = 30;
+  while (1) {
+    const longestCommitedChainHash = await Bridge.getLongestChainEndpoint();
+    var hdr = await Bridge.getHeader(longestCommitedChainHash);
+    var blockNumber = hdr['blockNumber'].toNumber();
+    console.log("getting previous blocks: ", blockNumber-back, blockNumber-5);
+    for (var i = blockNumber-back; i < blockNumber-5; i++) {
+      const block = await dw3.eth.getBlock(i);
+      block.transactions.forEach(async function(tx) {
+        const txn = await dw3.eth.getTransaction(tx);
+        if (txn.to == DOOBIE) {
+          claimTransaction(txn.hash);
+        }
+      });
+    }
 
-		const txn = await dw3.eth.getTransaction(txId);
-		console.log(txn);
-		const block = await dw3.eth.getBlock(txn.blockNumber)
-		//console.log(block);
-
-		const txtrie = await lib.getTransactionTrie(dw3, txn.blockNumber, txId);
-		const proof = await Trie.createProof(txtrie.trie, txtrie.key);
-		//console.log(proof)
-
-    await BridgeSale.redeemDeposit(lib.getBlockRlp(block), lib.getTransactionRlp(txn), txn['from'], txtrie.key, rlp.encode(proof));
-	}
+    back = 15;
+    await sleep(5000);
+  }
 }
 
 

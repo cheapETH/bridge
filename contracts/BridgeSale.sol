@@ -84,6 +84,10 @@ contract BridgeSale {
     return (from, txx.to, txx.value);
   }
 
+  function isTransactionClaimed(bytes32 hash) public view returns (bool) {
+    return seenTransactions[hash];
+  }
+
   function redeemDeposit(bytes memory rlpBlockHeader, bytes memory rlpTransaction, address payable inputFrom, bytes memory key, bytes memory proof) public {
     bytes32 blockHash = keccak256(rlpBlockHeader);
     bytes32 transactionHash = keccak256(rlpTransaction);
