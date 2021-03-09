@@ -55,4 +55,8 @@ Using yarn, hardhat, and waffle
 
 # BRIDGE=0x8168a8c43F1943EcC812ef1b8dE19a897c16488e npx hardhat run scripts/bridgesale.js --network cheapeth
 
+== Running Sale ==
+
+# BRIDGESALE=0x811F7Df7Ca943A5aa17314fF025bC9368E6686C6 BRIDGE=0x8168a8c43F1943EcC812ef1b8dE19a897c16488e npx hardhat run scripts/bridgesale.js --network cheapeth
+
 
