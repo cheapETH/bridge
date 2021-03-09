@@ -1,11 +1,14 @@
 var Web3 = require('web3');
 
-const USE_DEVETH = process.env['NETWORK'] == "deveth";
-
-if (USE_DEVETH) {
+var poa = false;
+if (process.env['NETWORK'] == "deveth") {
   console.log("Deploying bridge to deveth");
   var w3 = new Web3("https://rpc.deveth.org/");
   var bombDelayFromParent = 900000000;
+} else if (process.env['NETWORK'] == "binance") {
+  console.log("Deploying bridge to binance");
+  var w3 = new Web3("https://bsc-dataseed.binance.org/");
+  poa = true;
 } else {
   console.log("Deploying bridge to mainnet");
   var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
@@ -35,8 +38,13 @@ async function main() {
   if (bridgeAddress == null) {
     const genesis_block = await w3.eth.getBlock("latest");
 
-    const BridgeFactory = await ethers.getContractFactory("Bridge");
-    Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block), bombDelayFromParent);
+    if (poa) {
+      const BridgeFactory = await ethers.getContractFactory("BridgeBinance");
+      Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block));
+    } else {
+      const BridgeFactory = await ethers.getContractFactory("Bridge");
+      Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block), bombDelayFromParent);
+    }
 
     console.log("Deployed Bridge address:", Bridge.address);
   } else {

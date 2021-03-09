@@ -8,6 +8,10 @@ import "./lib/Lib_RLPReader.sol";
 import "./lib/Lib_RLPWriter.sol";
 import "./lib/Lib_MerkleTrie.sol";
 
+/**
+ * @title BridgeSale
+ * @dev The BridgeSale uses the state from a Bridge to validate send transactions on the bridged chain.
+ */
 contract BridgeSale {
   Bridge immutable bridge;
   address immutable depositOnL1;
@@ -91,7 +95,6 @@ contract BridgeSale {
   function redeemDeposit(bytes memory rlpBlockHeader, bytes memory rlpTransaction, address payable inputFrom, bytes memory key, bytes memory proof) public {
     bytes32 blockHash = keccak256(rlpBlockHeader);
     bytes32 transactionHash = keccak256(rlpTransaction);
-    require(bridge.isHeaderStored(blockHash), "block is not in Bridge");
     require(!seenTransactions[transactionHash], "already paid out transaction");
     seenTransactions[transactionHash] = true;
 
@@ -103,6 +106,7 @@ contract BridgeSale {
     bytes32 hash;
     uint24 depth;
     (hash, depth) = bridge.getBlockByNumber(blockNumber);
+    require(hash == blockHash, "block hash didn't match block for number");
     require(depth >= BLOCK_DEPTH_REQUIRED, "block not deep enough in chain");
 
     // parse and validate the transaction (do we have to? it's in the block)

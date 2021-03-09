@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
 pragma solidity >=0.6.0;
 pragma experimental ABIEncoderV2;
 
@@ -6,8 +7,10 @@ import "./lib/Ethash.sol";
 import "hardhat/console.sol";
 import "./lib/Lib_RLPReader.sol";
 
-// derived from https://github.com/pantos-io/ethrelay/blob/master/contracts/TestimoniumCore.sol
-
+/**
+ * @title Bridge
+ * @dev The Bridge tracks and verifies the state of a proof of work ethereum chain.
+ */
 contract Bridge {
   uint16 constant ALLOWED_FUTURE_BLOCK_TIME = 5 minutes;
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
