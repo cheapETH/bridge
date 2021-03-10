@@ -64,6 +64,10 @@ Checkpointer contract:
   * CrossDeposit:      Burn wcTH on the main chain (send to 0), get value on the cTH chain (this is mostly the bridgesale)
   * Anyone can run a "relayer", this is all trustless.
 
+== Terms ==
+
+You deposit your cTH into other chains, this is slow. You withdraw back into cTH, this is fast.
+
 == The Dream ==
 * wcTH token on ethereum and wcTH token on binance smart chain, movable in and out of cTH
   * cTH chain is not a store of value!
