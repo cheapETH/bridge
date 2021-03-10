@@ -46,6 +46,8 @@ Checkpointer contract:
   * Call a method "trust" from the wallet with an address to add your cTH to the votes for the checkpoint
     * Careful, too many addresses with trust might be slow, though I think we can track this well in geth
 
+cheapETH is a PoW chain for the most recent 100 blocks, a hybrid PoS chain further back
+
 == Bridges ==
 
 * BridgeEthash (done) -- for mainnet (or deveth for testing)
@@ -66,7 +68,7 @@ Checkpointer contract:
 
 == Terms ==
 
-You deposit your cTH into other chains, this is slow. You withdraw back into cTH, this is fast.
+You withdraw your cTH into other chains, this is slow. You deposit back into cTH, this is fast.
 
 == The Dream ==
 * wcTH token on ethereum and wcTH token on binance smart chain, movable in and out of cTH
@@ -75,9 +77,9 @@ You deposit your cTH into other chains, this is slow. You withdraw back into cTH
 * This also gives cheapETH a real use as a bridge currency and compute
 * To deploy on each chain
   * cheapETH
-    * BridgeEthash
+    * BridgeEthash  -- bridge to mainnet
       * CrossDeposit
-    * BridgeBinance
+    * BridgeBinance -- bridge to binance smart chain
       * CrossDeposit
     * Checkpointer (to prevent reorgs, needed before BridgeAuthority)
   * main chain
