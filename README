@@ -33,6 +33,56 @@ The L1 Bridge contract can have the L2 states submitted to it, the contract will
 Really, we have to modify L2 go-ethereum to not allow chain reorgs lower than the trusted state, say 100 blocks back, but with small amounts of value, we can put this off until later. All exchanges have this same problem. This contract would also track the location of the tokens, if you transfer it on L1, you can prove the transfer on L2 with the L1 -> L2 bridge.
 
 
+== Checkpointing to prevent reorgs, before any serious cross chain value lockup ==
+
+Checkpointer contract:
+* Save signed block hash 100+ (max 255 for reexec) blocks ago
+* This will allow withdrawals in 30 minutes, and won't allow chain reorgs before that
+* By default, sign every 10 blocks, aka blocks with mod 0? Verifiers can save more (anyone can be a verifier)
+  * If you want to access something in an unsigned block on the main chain, build 10 backward
+* This won't allow reorgs longer than 100 blocks, but will force a canonical chain
+* Modify geth to look in the checkpointer contract for the checkpoints
+  * Designated proof of stake, your cTH balance determines your trust to geth back 100 blocks
+  * Call a method "trust" from the wallet with an address to add your cTH to the votes for the checkpoint
+    * Careful, too many addresses with trust might be slow, though I think we can track this well in geth
+
+== Bridges ==
+
+* BridgeEthash (done) -- for mainnet (or deveth for testing)
+  * TODO: fix the lookback problem
+* BridgeBinance (WIP) -- for binance smart chain
+* BridgeAuthority -- sign the block hash from a trusted address, simplest. anyone can build backward off it
+  * Ideally, we implement the same proof of stake for the checkpointer here
+* The key thing is that they implement a "getBlockByNumber" function that returns the hash and the depth
+
+== Bridge Users ==
+
+* BridgeSale -- convert 1 currency into another at a fixed exchange rate (only one side needs a contract)
+  * deprecate this, it's useless without an exchange rate, though it was a fun experiment
+* CrossWrap/CrossDeposit -- convert value into a wrapped token on the other side and back (both sides need a contract)
+  * CrossWrap (ERC20): Send value to CrossDeposit on cTH chain, redeem minted wcTH on main chain
+  * CrossDeposit:      Burn wcTH on the main chain (send to 0), get value on the cTH chain (this is mostly the bridgesale)
+  * Anyone can run a "relayer", this is all trustless.
+
+== The Dream ==
+* wcTH token on ethereum and wcTH token on binance smart chain, movable in and out of cTH
+  * cTH chain is not a store of value!
+* Do this, don't do any crowdsales
+* This also gives cheapETH a real use as a bridge currency and compute
+* To deploy on each chain
+  * cheapETH
+    * BridgeEthash
+      * CrossDeposit
+    * BridgeBinance
+      * CrossDeposit
+    * Checkpointer (to prevent reorgs, needed before BridgeAuthority)
+  * main chain
+    * BridgeAuthority
+      * CrossWrap
+  * binance smart chain
+    * BridgeAuthority
+      * CrossWrap
+
 == Building ==
 
 Going to try the fancy infrastructure instead of rolling my own in Python
