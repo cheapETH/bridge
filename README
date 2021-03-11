@@ -97,13 +97,15 @@ Place your private key in ~/.bridgekey
 
 Using yarn, hardhat, and waffle
 
-# npx hardhat compile
-
+# yarn compile
+or
+# npm run compile
 
 == Testing == 
 
-# npx hardhat test
-
+# yarn test
+or
+# npm test
 
 == Deploying == 
 

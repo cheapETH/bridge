@@ -5,6 +5,10 @@
   "main": "index.js",
   "repository": "git@github.com:cheapETH/bridge.git",
   "author": "George Hotz <geohot@gmail.com>",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test"
+  },
   "license": "MIT",
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
@@ -14,6 +18,7 @@
     "ethers": "^5.0.31",
     "hardhat": "^2.0.11",
     "hardhat-gas-reporter": "^1.0.4",
-    "merkle-patricia-tree": "^4.1.0"
+    "merkle-patricia-tree": "^4.1.0",
+    "web3": "^1.3.4"
   }
 }
