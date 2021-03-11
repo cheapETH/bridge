@@ -2,7 +2,9 @@ require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 
 var fs = require('fs');
-var bridgeKey = fs.readFileSync("/Users/taylor/.bridgekey",{ encoding: 'utf8' });
+const home = require('os').homedir();
+const keyfile = require('path').join(home, '.bridgekey')
+var bridgeKey = fs.readFileSync(keyfile, { encoding: 'utf8' });
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
