@@ -93,15 +93,19 @@ You withdraw your cTH into other chains, this is slow. You deposit back into cTH
 
 Going to try the fancy infrastructure instead of rolling my own in Python
 
+Place your private key in ~/.bridgekey
+
 Using yarn, hardhat, and waffle
 
-# npx hardhat compile
-
+# yarn compile
+or
+# npm run compile
 
 == Testing == 
 
-# npx hardhat test
-
+# yarn test
+or
+# npm test
 
 == Deploying == 
 
