@@ -16,7 +16,6 @@ describe("BridgeBinance contract", function() {
     const validatorsRaw = await w3.eth.call({
       to: "0x0000000000000000000000000000000000001000",
       data: Web3.utils.soliditySha3("getValidators()").slice(0,10)}, STARTBLOCK);
-
     validators = w3.eth.abi.decodeParameter('address[]', validatorsRaw);
     BridgeBinanceFactory = await ethers.getContractFactory("BridgeBinance");
   });
@@ -27,7 +26,16 @@ describe("BridgeBinance contract", function() {
     const block = await Bridge.getBlockByNumber(STARTBLOCK);
     console.log(block);
   });
+  it("Does sometihn", async function() {
+    const add_block = await w3.eth.getBlock(STARTBLOCK-100);
+    console.log(add_block);
+    const block_rlp_headers = lib.getBlockRlp(add_block);
+    console.log(block_rlp_headers);
+    Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
 
+    await Bridge.submitHeader(block_rlp_headers);
+    //console.log(block);
+  });
   it("Look for not found block", async function() {
     Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
 
