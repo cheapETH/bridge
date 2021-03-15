@@ -1,9 +1,9 @@
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
+require('@nomiclabs/hardhat-waffle');
+require('hardhat-gas-reporter');
 
 var fs = require('fs');
 const home = require('os').homedir();
-const keyfile = require('path').join(home, '.bridgekey')
+const keyfile = require('path').join(home, '.bridgekey');
 var bridgeKey = fs.readFileSync(keyfile, { encoding: 'utf8' });
 
 /**
@@ -11,22 +11,22 @@ var bridgeKey = fs.readFileSync(keyfile, { encoding: 'utf8' });
  */
 module.exports = {
   solidity: {
-    version: "0.6.12",
+    version: '0.6.12',
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
-      }
-    }
+        runs: 200,
+      },
+    },
   },
   networks: {
     cheapeth: {
-      url: "https://node.cheapeth.org/rpc",
+      url: 'https://node.cheapeth.org/rpc',
       accounts: [bridgeKey],
-    }
+    },
   },
   paths: {
-    sources: "./contracts",
-    tests: "./test",
+    sources: './contracts',
+    tests: './test',
   },
 };

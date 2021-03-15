@@ -7,7 +7,8 @@
   "author": "George Hotz <geohot@gmail.com>",
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "format": "prettier --write \"**/*.js\""
   },
   "license": "MIT",
   "dependencies": {
@@ -19,6 +20,7 @@
     "hardhat": "^2.0.11",
     "hardhat-gas-reporter": "^1.0.4",
     "merkle-patricia-tree": "^4.1.0",
+    "prettier": "^2.2.1",
     "web3": "^1.3.4"
   }
 }
