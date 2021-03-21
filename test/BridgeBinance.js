@@ -41,6 +41,7 @@ function parseSig(sig) {
   v = Buffer.from(v);
   return {r,s,v};
 }
+
 describe("handleRlpHeader", function() {
   it("Correctly encodes sample header", async function() {
     const {signature, rlp} = handleRlpHeader(lib.getBlockRlp(sampleHeader));
@@ -59,11 +60,18 @@ describe("handleRlpHeader", function() {
     const {signature, rlp} = handleRlpHeader(lib.getBlockRlp(sampleHeader));
     //const msg = Web3.utils.sha3(rlp);
     const {r,s,v} = parseSig(signature);
-    console.log({r,s,v});
     const msg = Buffer.from('f472a3e5116fa0e1310e40f570943c453df78050ba57aa7486269bd8876094e9', 'hex')
     utils.ecrecover(msg, v, r, s);
   })
 });
+
+async function do_add_block(Bridge, bn) {
+  add_block = await w3.eth.getBlock(bn);
+  var add_block_rlp = lib.getBlockRlp(add_block);
+  const ret = await Bridge.submitHeader(add_block_rlp);
+  const [hash, depth] = await Bridge.getBlockByNumber(add_block['number']);
+  expect(hash).to.equal(add_block['hash']);
+}
 
 describe("BridgeBinance contract", function() {
   // deploying at latest so the getValidators() call works
@@ -92,14 +100,39 @@ describe("BridgeBinance contract", function() {
     console.log(block);
   });
 
-  it("Does something", async function() {
-    const add_block = await w3.eth.getBlock(STARTBLOCK-100);
-    const block_rlp_headers = lib.getBlockRlp(add_block);
-    //const pub =  await w3.eth.personal.ecRecover(sha3, '0x'+sig.toString('hex'));
-    console.log();
+  it("Bridge adds two blocks", async function() {
     Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
+    await do_add_block(Bridge, STARTBLOCK-100);
+    await do_add_block(Bridge, STARTBLOCK-100);
+  });
 
-    await Bridge.submitHeader(block_rlp_headers);
+  it("Bridge adds two blocks together", async function() {
+    add_block_1 = await w3.eth.getBlock(STARTBLOCK-100);
+    add_block_2 = await w3.eth.getBlock(STARTBLOCK-99);
+
+    //expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(false);
+    //expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(false);
+
+    const ret = await Bridge.submitHeaders([lib.getBlockRlp(add_block_1), lib.getBlockRlp(add_block_2)]);
+
+    //expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(true);
+    //expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(true);
+  });
+
+  it("Bridge doesn't add block with broken signature", async function() {
+    const add_block = await w3.eth.getBlock(STARTBLOCK-100)
+    // modify any field to break the signature check
+    add_block['difficulty'] = '3';
+    var add_block_rlp = lib.getBlockRlp(add_block);
+    await expect(Bridge.submitHeader(add_block_rlp)).to.be.revertedWith("not signed by miner");
+  });
+
+  it("Bridge doesn't add block signed by unknown miner", async function() {
+    const add_block = await w3.eth.getBlock(STARTBLOCK-100)
+    // set miner to any address not in validators
+    add_block['miner'] = '0x124e1d82D7abE42776fb355981a84f061daB4085';
+    var add_block_rlp = lib.getBlockRlp(add_block);
+    await expect(Bridge.submitHeader(add_block_rlp)).to.be.revertedWith("miner not in validator set");
   });
 
   it("Look for not found block", async function() {

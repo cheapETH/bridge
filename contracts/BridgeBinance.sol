@@ -15,7 +15,7 @@ contract BridgeBinance {
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
   mapping (uint => bytes32) private headers;
   uint largestBlockNumber;
-  // TODO: this should problably moved to some library
+  // TODO: this should be moved to some library
   struct FullHeader {
     bytes32 parent;
     bytes32 uncleHash;
@@ -153,7 +153,7 @@ contract BridgeBinance {
     bytes32 blockHash = keccak256(rlpHeader);
 
     FullHeader memory header = decodeBlockData(rlpHeader);
-    require(header.timestamp <= now + 1000, "block in in the future");
+    require(header.timestamp < now + 1 seconds, "block in in the future");
 
     if (header.blockNumber > largestBlockNumber) largestBlockNumber = header.blockNumber;
 
@@ -179,8 +179,6 @@ contract BridgeBinance {
     require(signer == header.miner, "not signed by miner");
 
     uint expectedDifficulty = calculateDifficulty(header.miner, header.blockNumber);
-    console.log("sol diff", expectedDifficulty);
-
     require(header.difficulty == expectedDifficulty, "expected difficulty doesn't match");
 
     headers[header.blockNumber] = blockHash;
