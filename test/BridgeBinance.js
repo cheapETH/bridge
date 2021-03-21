@@ -79,6 +79,7 @@ describe("BridgeBinance contract", function() {
     genesis_block = await w3.eth.getBlock('latest');
     //console.log(genesis_block);
     STARTBLOCK = genesis_block.number;
+    genesis_block = await w3.eth.getBlock(STARTBLOCK-101);
 
     // https://bscscan.com/address/0x0000000000000000000000000000000000001000
     const validatorsRaw = await w3.eth.call({
@@ -96,7 +97,7 @@ describe("BridgeBinance contract", function() {
   it("Find genesis block", async function() {
     Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
 
-    const block = await Bridge.getBlockByNumber(STARTBLOCK);
+    const block = await Bridge.getBlockByNumber(STARTBLOCK - 101);
     console.log(block);
   });
 
@@ -107,16 +108,18 @@ describe("BridgeBinance contract", function() {
   });
 
   it("Bridge adds two blocks together", async function() {
+    Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
+
     add_block_1 = await w3.eth.getBlock(STARTBLOCK-100);
     add_block_2 = await w3.eth.getBlock(STARTBLOCK-99);
 
-    //expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(false);
-    //expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(false);
+    expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(false);
+    expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(false);
 
     const ret = await Bridge.submitHeaders([lib.getBlockRlp(add_block_1), lib.getBlockRlp(add_block_2)]);
 
-    //expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(true);
-    //expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(true);
+    expect(await Bridge.isHeaderStored(add_block_1['hash'])).to.equal(true);
+    expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(true);
   });
 
   it("Bridge doesn't add block with broken signature", async function() {

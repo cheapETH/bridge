@@ -13,8 +13,7 @@ import "./lib/Lib_BytesUtils.sol";
 contract BridgeBinance {
   address[] public currentValidatorSet;
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
-  mapping (uint => bytes32) private headers;
-  uint largestBlockNumber;
+
   // TODO: this should be moved to some library
   struct FullHeader {
     bytes32 parent;
@@ -107,13 +106,27 @@ contract BridgeBinance {
     return Lib_RLPWriter.writeList(raw);
   }
 
+  struct Header {
+    uint24 blockNumber;
+    bytes32 hash;
+    //uint232 totalDifficulty;
+    bytes32 parentHash;
+    uint64 timestamp;
+  }
+
+  mapping (uint => Header) private headers;
+  mapping (bytes32 => uint) private hash2blockNumber;
+  uint largestBlockNumber;
+  bool noGenesis;
+
   constructor(bytes memory genesisHeader, address[] memory consensusAddrs) public {
     // add validators
     for (uint i = 0; i < consensusAddrs.length; i++) {
       //console.log("validator", consensusAddrs[i]);
       currentValidatorSet.push(consensusAddrs[i]);
     }
-
+    //skip parent block check
+    noGenesis = true;
     // first block should be good to be normal
     submitHeader(genesisHeader);
   }
@@ -169,6 +182,16 @@ contract BridgeBinance {
     require(header.mixHash == empty, "mixhash should be zero");
     require(header.uncleHash == EMPTY_UNCLE_HASH, "shouldn't have any uncles");
 
+    // verify block is in chain, skip if no genesis block
+    if(!noGenesis) {
+      require(isHeaderStored(header.parent), "parent does not exist");
+      Header memory parentHeader = getHeaderInternal(header.parent);
+      require(parentHeader.blockNumber == header.blockNumber-1, "parent block number is wrong");
+
+      // confirm block is in order
+      require(parentHeader.timestamp <= header.timestamp, "parent happened after this block");
+      noGenesis = false;
+    }
     // TODO: validate block
     // see https://docs.binance.org/smart-chain/guides/concepts/consensus.html
     // also https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L153
@@ -181,7 +204,14 @@ contract BridgeBinance {
     uint expectedDifficulty = calculateDifficulty(header.miner, header.blockNumber);
     require(header.difficulty == expectedDifficulty, "expected difficulty doesn't match");
 
-    headers[header.blockNumber] = blockHash;
+    Header memory newHeader;
+    newHeader.blockNumber = uint24(header.blockNumber);
+    newHeader.hash = blockHash;
+    newHeader.parentHash = header.parent;
+    newHeader.timestamp = uint64(header.timestamp);
+
+    headers[header.blockNumber] = newHeader;
+    hash2blockNumber[blockHash] = header.blockNumber;
   }
 
   // see https://github.com/binance-chain/bsc/blob/f16d8e0dd37f465b4a8297e5430ec3d017474ab7/consensus/parlia/parlia.go#L869
@@ -210,10 +240,29 @@ contract BridgeBinance {
     return signer;
   }
 
+  function isHeaderStored(bytes32 hash) public view returns (bool) {
+    return hash2blockNumber[hash] != 0;
+  }
+  function getLongestChainEndpoint() public view returns (bytes32 hash) {
+   return headers[largestBlockNumber].hash;
+  }
+  function getHeaderInternal(bytes32 hash) private view returns (Header memory) {
+    uint blockNumber = hash2blockNumber[hash];
+    require(blockNumber != 0, "block not found");
+    return headers[blockNumber];
+  }
+  function getHeader(bytes32 blockHash) public view returns (bytes32 parentHash, uint blockNumber, uint totalDifficulty) {
+    Header memory header = getHeaderInternal(blockHash);
+    return (
+      header.parentHash,
+      header.blockNumber,
+      0
+    );
+  }
   function getBlockByNumber(uint blockNumber) public view returns (bytes32 hash, uint24 depth) {
-    bytes32 ret = headers[blockNumber];
-    require(ret != 0, "block not found");
-    return (ret, uint24(largestBlockNumber-blockNumber));
+    Header memory ret = headers[blockNumber];
+    require(ret.hash != 0, "block not found");
+    return (ret.hash, uint24(largestBlockNumber-blockNumber));
   }
 }
 
