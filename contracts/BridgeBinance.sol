@@ -186,29 +186,15 @@ contract BridgeBinance {
     headers[header.blockNumber] = blockHash;
   }
 
-  function logv() private view {
-    console.log('[');
-    for (uint i = 0; i < currentValidatorSet.length; i++) {
-       console.log(i, currentValidatorSet[i], ',');
-    }
-    console.log(']');
-  }
-  // TODO: wtf????
-  // Error: VM Exception while processing transaction: revert expected difficulty doesn't match
-  //   at BridgeBinance.getBlockByNumber (contracts/BridgeBinance.sol:206)
-
-  // This is fucked up, maybe some one can tell me where im wrong
   // see https://github.com/binance-chain/bsc/blob/f16d8e0dd37f465b4a8297e5430ec3d017474ab7/consensus/parlia/parlia.go#L869
   // also https://github.com/binance-chain/bsc/blob/f16d8e0dd37f465b4a8297e5430ec3d017474ab7/consensus/parlia/snapshot.go#L241
 
   function calculateDifficulty(address miner, uint blockNumber) private view returns (uint) {
-    uint offset = (blockNumber + 1) % uint64(currentValidatorSet.length - 1);
+    uint offset = (blockNumber + 1) % uint64(currentValidatorSet.length);
 
     uint index = offset == 0 ? 21 : offset;
-    //index = index - 1;
-    //ilogv();
-    console.log(offset, index, blockNumber);
-    console.log(currentValidatorSet[index], miner);
+    index = index - 1;
+
     if (currentValidatorSet[index] == miner) {
       return 2; // diffInTurn
     } else {

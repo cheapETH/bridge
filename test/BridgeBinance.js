@@ -78,12 +78,8 @@ describe("BridgeBinance contract", function() {
       data: Web3.utils.soliditySha3("getValidators()").slice(0,10)}, STARTBLOCK);
     validators = w3.eth.abi.decodeParameter('address[]', validatorsRaw);
     // Validators should be sorted for correct block diffuculty calculation;
-
-    // This is super wierd when i add this address for aligment, it works all the time
-    // !!! But when i try to subtract 1 form index in the contract everything breaks.
-    validators = ['0x0000000000000000000000000000000000000000', ...validators].sort((a,b) => {
-      return parseInt(a, 16) - parseInt(b, 16);
-    }).map(e => e.toLowerCase());
+    validators = [...validators]
+      .sort((a,b) => parseInt(a, 16) - parseInt(b, 16));
     //console.log(genesis_block);
     //console.log(validators);
     BridgeBinanceFactory = await ethers.getContractFactory("BridgeBinance");
