@@ -12,9 +12,38 @@ import "./lib/Lib_BytesUtils.sol";
  */
 contract BridgeBinance {
   address[] public currentValidatorSet;
-
+  bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
   mapping (uint => bytes32) private headers;
   uint largestBlockNumber;
+  // TODO: this should problably moved to some library
+  struct FullHeader {
+    bytes32 parent;
+    bytes32 uncleHash;
+    uint difficulty;
+    uint blockNumber;
+    uint timestamp;
+    bytes32 mixHash;
+    uint nonce;
+    address miner;
+    bytes extraData;
+  }
+  // and this too
+  function decodeBlockData(bytes memory rlpHeader) internal pure returns (FullHeader memory) {
+    Lib_RLPReader.RLPItem[] memory nodes = Lib_RLPReader.readList(rlpHeader);
+    FullHeader memory header = FullHeader({
+      parent: Lib_RLPReader.readBytes32(nodes[0]),
+      uncleHash: Lib_RLPReader.readBytes32(nodes[1]),
+      miner: Lib_RLPReader.readAddress(nodes[2]),
+      difficulty: Lib_RLPReader.readUint256(nodes[7]),
+      blockNumber: Lib_RLPReader.readUint256(nodes[8]),
+      timestamp: Lib_RLPReader.readUint256(nodes[11]),
+      extraData: Lib_RLPReader.readBytes(nodes[12]),
+      mixHash: Lib_RLPReader.readBytes32(nodes[13]),
+      nonce: Lib_RLPReader.readUint256(nodes[14])
+    });
+
+    return header;
+  }
 
   enum EncType {
     ENC_BYTES32,
@@ -78,11 +107,6 @@ contract BridgeBinance {
     return Lib_RLPWriter.writeList(raw);
   }
 
-  function decodeBlockData(bytes memory rlpHeader) internal pure returns (uint blockNumber, bytes memory extraData, address miner) {
-    Lib_RLPReader.RLPItem[] memory nodes = Lib_RLPReader.readList(rlpHeader);
-    return (Lib_RLPReader.readUint256(nodes[8]), Lib_RLPReader.readBytes(nodes[12]), Lib_RLPReader.readAddress(nodes[2]));
-  }
-
   constructor(bytes memory genesisHeader, address[] memory consensusAddrs) public {
     // add validators
     for (uint i = 0; i < consensusAddrs.length; i++) {
@@ -99,6 +123,7 @@ contract BridgeBinance {
       submitHeader(rlpHeaders[i]);
     }
   }
+
   function splitSignature(bytes memory sig) public pure returns (bytes32 r, bytes32 s, uint8 v)
   {
       require(sig.length == 65, "invalid signature length");
@@ -123,37 +148,82 @@ contract BridgeBinance {
 
       // implicitly return (r, s, v)
   }
+
   function submitHeader(bytes memory rlpHeader) public {
     bytes32 blockHash = keccak256(rlpHeader);
-    uint blockNumber;
-    bytes memory extraData;
-    address miner;
 
-    (blockNumber, extraData, miner) = decodeBlockData(rlpHeader);
-    if (blockNumber > largestBlockNumber) largestBlockNumber = blockNumber;
+    FullHeader memory header = decodeBlockData(rlpHeader);
+    require(header.timestamp <= now + 1000, "block in in the future");
+
+    if (header.blockNumber > largestBlockNumber) largestBlockNumber = header.blockNumber;
 
     // confirm miner is in validator set
     // disgusting O(n) algorithm
     bool found = false;
     for (uint i = 0; i < currentValidatorSet.length; i++) {
-      if (currentValidatorSet[i] == miner) found = true;
+      if (currentValidatorSet[i] == header.miner) found = true;
     }
     require(found, "miner not in validator set");
+
+    bytes32 empty;
+    require(header.mixHash == empty, "mixhash should be zero");
+    require(header.uncleHash == EMPTY_UNCLE_HASH, "shouldn't have any uncles");
 
     // TODO: validate block
     // see https://docs.binance.org/smart-chain/guides/concepts/consensus.html
     // also https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L153
 
-    bytes memory slice = Lib_BytesUtils.slice(extraData, extraData.length - 65);
-    (bytes32 r, bytes32 s, uint8 v) = splitSignature(slice);
+    // signature is always last 65 bytes
+    bytes memory sig = Lib_BytesUtils.slice(header.extraData, header.extraData.length - 65);
+    address signer = getSigner(sig, rlpHeader);
+    require(signer == header.miner, "not signed by miner");
+
+    uint expectedDifficulty = calculateDifficulty(header.miner, header.blockNumber);
+    console.log("sol diff", expectedDifficulty);
+
+    require(header.difficulty == expectedDifficulty, "expected difficulty doesn't match");
+
+    headers[header.blockNumber] = blockHash;
+  }
+
+  function logv() private view {
+    console.log('[');
+    for (uint i = 0; i < currentValidatorSet.length; i++) {
+       console.log(i, currentValidatorSet[i], ',');
+    }
+    console.log(']');
+  }
+  // TODO: wtf????
+  // Error: VM Exception while processing transaction: revert expected difficulty doesn't match
+  //   at BridgeBinance.getBlockByNumber (contracts/BridgeBinance.sol:206)
+
+  // This is fucked up, maybe some one can tell me where im wrong
+  // see https://github.com/binance-chain/bsc/blob/f16d8e0dd37f465b4a8297e5430ec3d017474ab7/consensus/parlia/parlia.go#L869
+  // also https://github.com/binance-chain/bsc/blob/f16d8e0dd37f465b4a8297e5430ec3d017474ab7/consensus/parlia/snapshot.go#L241
+
+  function calculateDifficulty(address miner, uint blockNumber) private view returns (uint) {
+    uint offset = (blockNumber + 1) % uint64(currentValidatorSet.length - 1);
+
+    uint index = offset == 0 ? 21 : offset;
+    //index = index - 1;
+    //ilogv();
+    console.log(offset, index, blockNumber);
+    console.log(currentValidatorSet[index], miner);
+    if (currentValidatorSet[index] == miner) {
+      return 2; // diffInTurn
+    } else {
+      return 1; // diffNoTurn
+    }
+  }
+
+  function getSigner(bytes memory sig, bytes memory rlpHeader) private pure returns (address) {
+    (bytes32 r, bytes32 s, uint8 v) = splitSignature(sig);
     // bruh.
     v = v + 27;
     bytes memory nonSignedHeader = encodeRlpHeaderNoSign(rlpHeader);
     bytes32 signedmsg = keccak256(nonSignedHeader);
     address signer = ecrecover(signedmsg, v, r, s);
-    require(signer == miner, "not signed by miner");
-
-    headers[blockNumber] = blockHash;
+    return signer;
   }
 
   function getBlockByNumber(uint blockNumber) public view returns (bytes32 hash, uint24 depth) {

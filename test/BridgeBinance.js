@@ -77,6 +77,15 @@ describe("BridgeBinance contract", function() {
       to: "0x0000000000000000000000000000000000001000",
       data: Web3.utils.soliditySha3("getValidators()").slice(0,10)}, STARTBLOCK);
     validators = w3.eth.abi.decodeParameter('address[]', validatorsRaw);
+    // Validators should be sorted for correct block diffuculty calculation;
+
+    // This is super wierd when i add this address for aligment, it works all the time
+    // !!! But when i try to subtract 1 form index in the contract everything breaks.
+    validators = ['0x0000000000000000000000000000000000000000', ...validators].sort((a,b) => {
+      return parseInt(a, 16) - parseInt(b, 16);
+    }).map(e => e.toLowerCase());
+    //console.log(genesis_block);
+    //console.log(validators);
     BridgeBinanceFactory = await ethers.getContractFactory("BridgeBinance");
   });
 
@@ -86,10 +95,9 @@ describe("BridgeBinance contract", function() {
     const block = await Bridge.getBlockByNumber(STARTBLOCK);
     console.log(block);
   });
+
   it("Does something", async function() {
-    const add_block = sampleHeader; //await w3.eth.getBlock(STARTBLOCK-100);
-    //console.log(add_block);
-    console.log('miner ', add_block['miner']);
+    const add_block = await w3.eth.getBlock(STARTBLOCK-100);
     const block_rlp_headers = lib.getBlockRlp(add_block);
     //const pub =  await w3.eth.personal.ecRecover(sha3, '0x'+sig.toString('hex'));
     console.log();
@@ -97,6 +105,7 @@ describe("BridgeBinance contract", function() {
 
     await Bridge.submitHeader(block_rlp_headers);
   });
+
   it("Look for not found block", async function() {
     Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
 
