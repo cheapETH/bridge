@@ -101,16 +101,7 @@ describe("BridgeBinance contract", function() {
     STARTBLOCK = genesis_block.number;
     genesis_block = await w3.eth.getBlock(STARTBLOCK-101);
 
-    // https://bscscan.com/address/0x0000000000000000000000000000000000001000
-    const validatorsRaw = await w3.eth.call({
-      to: "0x0000000000000000000000000000000000001000",
-      data: Web3.utils.soliditySha3("getValidators()").slice(0,10)}, STARTBLOCK);
-    validators = w3.eth.abi.decodeParameter('address[]', validatorsRaw);
-    // Validators should be sorted for correct block diffuculty calculation;
-    validators = [...validators]
-      .sort((a,b) => parseInt(a, 16) - parseInt(b, 16));
-    //console.log(genesis_block);
-    //console.log(validators);
+    validators = await lib.getValidatorsBinance(w3, STARTBLOCK);
     BridgeBinanceFactory = await ethers.getContractFactory("BridgeBinance");
   });
 
