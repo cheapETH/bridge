@@ -26,6 +26,7 @@ const sampleHeader = {
 };
 const buf2hex = (x) => '0x'+x.toString('hex');
 const hex2buf = (x) => new Buffer(x.slice(2), 'hex');
+const range = (start, end = start) => new Array(end).fill(null, start == end ? 0 : start, end);
 function handleRlpHeader(rlpHeader) {
   let decoded = rlp.decode(rlpHeader);
   const signature = decoded[12].slice(decoded[12].length - 65);
@@ -73,6 +74,25 @@ async function do_add_block(Bridge, bn) {
   expect(hash).to.equal(add_block['hash']);
 }
 
+const ADDRESS_SIZE = 20;
+function decodeValidatorsFromEpoch(block) {
+  const extraData = hex2buf(block.extraData);
+  const validatorBytes = extraData.slice(32, extraData.length - 65);
+  if ((validatorBytes.length % ADDRESS_SIZE) !== 0) {
+    throw new Error("validator bytes not address size aligned");
+  }
+  const addresses = [];
+  for(let offset = 0; offset < validatorBytes.length; offset += ADDRESS_SIZE) {
+    const addr = validatorBytes.slice(offset, offset + ADDRESS_SIZE);
+    addresses.push(buf2hex(addr));
+  }
+  return addresses;
+}
+async function getContractValidators(Bridge) {
+   const tmp = await Promise.all(range(21).map((_, i) => Bridge.currentValidatorSet(i)))
+   // bruh addresses are randmoly capitalized, at least it seems that way
+   return tmp.map(e => e.toLowerCase());
+}
 describe("BridgeBinance contract", function() {
   // deploying at latest so the getValidators() call works
   beforeEach(async function () {
@@ -122,7 +142,7 @@ describe("BridgeBinance contract", function() {
     expect(await Bridge.isHeaderStored(add_block_2['hash'])).to.equal(true);
   });
 
-  it("Bridge doesn't add block with broken signature", async function() {
+  it("Bridge doesn't add tampered block", async function() {
     const add_block = await w3.eth.getBlock(STARTBLOCK-100)
     // modify any field to break the signature check
     add_block['difficulty'] = '3';
@@ -137,6 +157,35 @@ describe("BridgeBinance contract", function() {
     var add_block_rlp = lib.getBlockRlp(add_block);
     await expect(Bridge.submitHeader(add_block_rlp)).to.be.revertedWith("miner not in validator set");
   });
+
+  it("Bridge updates currentValidatorSet from epoch block", async function() {
+    const latest = await w3.eth.getBlock('latest');
+    const LATEST_EPOCH = latest.number - (latest.number % 200);
+    // get validators from second to last genesis block
+    const genesis_with_epoch = await w3.eth.getBlock(LATEST_EPOCH-200);
+    const genesis_validators = decodeValidatorsFromEpoch(genesis_with_epoch);
+    // as gensis block use a block closest to next epoch
+    // to avoid syncing 200 block in the test
+    const genesis_nearby = await w3.eth.getBlock(LATEST_EPOCH-2);
+    Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_nearby), genesis_validators);
+
+    cur_validators = await getContractValidators(Bridge);
+    expect(cur_validators).to.deep.equal(genesis_validators);
+
+    test_block = await w3.eth.getBlock(LATEST_EPOCH-1);
+    await Bridge.submitHeader(lib.getBlockRlp(test_block));
+
+    const epoch = await w3.eth.getBlock(LATEST_EPOCH);
+    const newValidators = decodeValidatorsFromEpoch(epoch);
+
+    await Bridge.submitHeader(lib.getBlockRlp(epoch));
+
+    cur_validators = await getContractValidators(Bridge);
+    expect(cur_validators).to.deep.equal(newValidators);
+
+    test_block = await w3.eth.getBlock(LATEST_EPOCH + 1);
+    await Bridge.submitHeader(lib.getBlockRlp(test_block));
+  })
 
   it("Look for not found block", async function() {
     Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);

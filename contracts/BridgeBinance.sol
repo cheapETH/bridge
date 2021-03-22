@@ -13,7 +13,7 @@ import "./lib/Lib_BytesUtils.sol";
 contract BridgeBinance {
   address[] public currentValidatorSet;
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
-
+  uint constant EPOCH_LENGTH = 200;
   // TODO: this should be moved to some library
   struct FullHeader {
     bytes32 parent;
@@ -182,7 +182,7 @@ contract BridgeBinance {
     require(header.mixHash == empty, "mixhash should be zero");
     require(header.uncleHash == EMPTY_UNCLE_HASH, "shouldn't have any uncles");
 
-    // verify block is in chain, skip if no genesis block
+    // verify block is in chain, skip if genesis block
     if(!noGenesis) {
       require(isHeaderStored(header.parent), "parent does not exist");
       Header memory parentHeader = getHeaderInternal(header.parent);
@@ -204,6 +204,10 @@ contract BridgeBinance {
     uint expectedDifficulty = calculateDifficulty(header.miner, header.blockNumber);
     require(header.difficulty == expectedDifficulty, "expected difficulty doesn't match");
 
+    if (header.blockNumber % EPOCH_LENGTH == 0) {
+      updateValidatorSet(header.extraData);
+    }
+
     Header memory newHeader;
     newHeader.blockNumber = uint24(header.blockNumber);
     newHeader.hash = blockHash;
@@ -212,6 +216,20 @@ contract BridgeBinance {
 
     headers[header.blockNumber] = newHeader;
     hash2blockNumber[blockHash] = header.blockNumber;
+  }
+
+  function updateValidatorSet(bytes memory extraData) private {
+    // 32 -> extraVaniry 65 -> signature, everything between validator bytes
+    // TODO: make proper constants
+    bytes memory validatorBytes = Lib_BytesUtils.slice(extraData, 32, extraData.length - 65 - 32);
+    require(validatorBytes.length % 20 == 0, "invalid validator bytes length");
+    uint validators = validatorBytes.length / 20;
+    uint offset = 0;
+    for(uint i = 0; i < validators; i++) {
+      address addr = Lib_BytesUtils.toAddress(validatorBytes, offset);
+      currentValidatorSet[i] = addr;
+      offset += 20;
+    }
   }
 
   // see https://github.com/binance-chain/bsc/blob/f16d8e0dd37f465b4a8297e5430ec3d017474ab7/consensus/parlia/parlia.go#L869
@@ -243,14 +261,17 @@ contract BridgeBinance {
   function isHeaderStored(bytes32 hash) public view returns (bool) {
     return hash2blockNumber[hash] != 0;
   }
+
   function getLongestChainEndpoint() public view returns (bytes32 hash) {
    return headers[largestBlockNumber].hash;
   }
+
   function getHeaderInternal(bytes32 hash) private view returns (Header memory) {
     uint blockNumber = hash2blockNumber[hash];
     require(blockNumber != 0, "block not found");
     return headers[blockNumber];
   }
+
   function getHeader(bytes32 blockHash) public view returns (bytes32 parentHash, uint blockNumber, uint totalDifficulty) {
     Header memory header = getHeaderInternal(blockHash);
     return (
@@ -259,6 +280,7 @@ contract BridgeBinance {
       0
     );
   }
+
   function getBlockByNumber(uint blockNumber) public view returns (bytes32 hash, uint24 depth) {
     Header memory ret = headers[blockNumber];
     require(ret.hash != 0, "block not found");
