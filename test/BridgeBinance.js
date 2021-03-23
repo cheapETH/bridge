@@ -115,7 +115,7 @@ describe("BridgeBinance contract", function() {
   it("Bridge adds two blocks", async function() {
     Bridge = await BridgeBinanceFactory.deploy(lib.getBlockRlp(genesis_block), validators);
     await do_add_block(Bridge, STARTBLOCK-100);
-    await do_add_block(Bridge, STARTBLOCK-100);
+    await do_add_block(Bridge, STARTBLOCK-99);
   });
 
   it("Bridge adds two blocks together", async function() {
