@@ -40,7 +40,8 @@ async function main() {
 
     if (poa) {
       const BridgeFactory = await ethers.getContractFactory("BridgeBinance");
-      Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block));
+      const validators = await lib.getValidatorsBinance(w3, genesis_block.number);
+      Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block), validators);
     } else {
       const BridgeFactory = await ethers.getContractFactory("Bridge");
       Bridge = await BridgeFactory.deploy(lib.getBlockRlp(genesis_block), bombDelayFromParent);

@@ -63,6 +63,18 @@ async function getTransactionTrie(w3, blockNumber, txId) {
   return {"trie": trie, "key": saleKey, "value": saleTxRlp};
 }
 
+async function getValidatorsBinance(w3, bn) {
+  // https://bscscan.com/address/0x0000000000000000000000000000000000001000
+  const validatorsRaw = await w3.eth.call({
+      to: "0x0000000000000000000000000000000000001000",
+      data: Web3.utils.soliditySha3("getValidators()").slice(0,10)}, bn);
+  let validators = w3.eth.abi.decodeParameter('address[]', validatorsRaw);
+  // Validators should be sorted for correct block diffuculty calculation;
+  validators = [...validators]
+      .sort((a,b) => parseInt(a, 16) - parseInt(b, 16));
+  return validators;
+}
+
 const fromHexString = function(str) {
   if (typeof str === 'string' && str.startsWith('0x')) {
     return Buffer.from(str.slice(2), 'hex')
@@ -77,6 +89,5 @@ const toHexString = function(inp) {
     return '0x' + fromHexString(inp).toString('hex')
   }
 }
-
-module.exports = { getBlockRlp, getTransactionRlp, fromHexString, toHexString, getTransactionTrie };
+module.exports = { getBlockRlp, getTransactionRlp, fromHexString, toHexString, getTransactionTrie, getValidatorsBinance};
 
