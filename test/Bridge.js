@@ -2,7 +2,7 @@ const { expect } = require("chai");
 
 var rlp = require('rlp');
 var Web3 = require('web3');
-var w3 = new Web3("https://node.cheapeth.org/rpc");
+var w3 = new Web3("https://rpc.cheapeth.org/rpc");
 const bombDelayFromParent = 9000000;
 
 const FORKBLOCK = 11818960;

@@ -21,7 +21,7 @@ module.exports = {
   },
   networks: {
     cheapeth: {
-      url: "https://node.cheapeth.org/rpc",
+      url: "https://rpc.cheapeth.org/rpc",
       accounts: [bridgeKey],
     }
   },
