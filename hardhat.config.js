@@ -23,6 +23,7 @@ module.exports = {
     cheapeth: {
       url: "https://rpc.cheapeth.org/rpc",
       accounts: [bridgeKey],
+      gasPrice: 2000000000
     }
   },
   paths: {
