@@ -11,6 +11,8 @@ import "./lib/Lib_BytesUtils.sol";
  * @dev The Bridge tracks and verifies the state of binance smart chain
  */
 contract BridgeBinance {
+  uint16 constant ALLOWED_FUTURE_BLOCK_TIME = 5 minutes;
+
   address[] public currentValidatorSet;
   bytes32 constant EMPTY_UNCLE_HASH = hex"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
   uint constant EPOCH_LENGTH = 200;
@@ -166,7 +168,7 @@ contract BridgeBinance {
     bytes32 blockHash = keccak256(rlpHeader);
 
     FullHeader memory header = decodeBlockData(rlpHeader);
-    require(header.timestamp < now + 1 seconds, "block in in the future");
+    require(header.timestamp < now + ALLOWED_FUTURE_BLOCK_TIME, "block in in the future");
 
     if (header.blockNumber > largestBlockNumber) largestBlockNumber = header.blockNumber;
 
