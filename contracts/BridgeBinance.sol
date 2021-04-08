@@ -168,7 +168,7 @@ contract BridgeBinance {
     bytes32 blockHash = keccak256(rlpHeader);
 
     FullHeader memory header = decodeBlockData(rlpHeader);
-    require(header.timestamp < now + ALLOWED_FUTURE_BLOCK_TIME, "block in in the future");
+    require(header.timestamp < now + ALLOWED_FUTURE_BLOCK_TIME, "block in the future");
 
     if (header.blockNumber > largestBlockNumber) largestBlockNumber = header.blockNumber;
 
