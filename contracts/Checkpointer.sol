@@ -38,7 +38,7 @@ contract Checkpointer {
 
     att[number][msg.sender] = Checkpoint({
       hash: blockHash,
-      savedBlockNumber: block.number
+      savedBlockNumber: number
     });
   }
 

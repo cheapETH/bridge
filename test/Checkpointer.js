@@ -40,12 +40,11 @@ describe("Checkpointer contract", function() {
 
     const returned_block_hash = await Checkpointer.getBlockByNumber(submit_block.number, deployer.address);
     expect(returned_block_hash.hash == submit_block.hash);
-
     const tx_block = await ethers.provider.getBlock(returned_block_hash.savedBlockNumber.toNumber());
-    tx_block.transactions.forEach(async function(x) {
-      const tx = await ethers.provider.getTransaction(x);
-      console.log(tx);
-    });
+
+    // Submited and saved blocks should be the same
+    expect(tx_block).to.deep.equal(submit_block);
+
   });
 
 });
