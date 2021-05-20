@@ -4,8 +4,8 @@ require("hardhat-gas-reporter");
 var fs = require('fs');
 const home = require('os').homedir();
 const keyfile = require('path').join(home, '.bridgekey')
-var bridgeKey = fs.readFileSync(keyfile, { encoding: 'utf8' });
-
+// No trailng chars
+var bridgeKey = fs.readFileSync(keyfile, { encoding: 'utf8' }).toString().trim();
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
