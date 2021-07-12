@@ -11,7 +11,8 @@ if (process.env['NETWORK'] == "deveth") {
   poa = true;
 } else {
   console.log("Deploying bridge to mainnet");
-  var w3 = new Web3("https://mainnet.cheapeth.org/rpc");
+  // https://docs.linkpool.io/docs/public_rpc
+  var w3 = new Web3("https://main-light.eth.linkpool.io/");
   var bombDelayFromParent = 9000000;
 }
 
