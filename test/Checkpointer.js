@@ -34,6 +34,13 @@ describe("Checkpointer contract", function() {
     await Checkpointer.trust(deployer.address);
   });
 
+  it("Get All trusters", async function() {
+    await Checkpointer.trust(deployer.address);
+    
+    const t = await Checkpointer.getTrusted();
+    console.log(t);
+  });
+
   it("Submit checkpoint and send to BridgeAuthority", async function() {
     const submit_block = await ethers.provider.getBlock(latest_block_number - 100);
     await Checkpointer.attest(submit_block.number, submit_block.hash);

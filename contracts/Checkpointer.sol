@@ -66,5 +66,12 @@ contract Checkpointer {
       trusters[lowest] = msg.sender;
     }
   }
+  function getTrusted() public view returns (address[] memory) {
+    address[] memory ret = new address[](trusters.length);
+    for(uint i = 0; i < trusters.length; i++) {
+      ret[i] = trusted[trusters[i]];
+    }
+    return ret;
+  }
 }
 
