@@ -36,8 +36,8 @@ describe("Checkpointer contract", function() {
 
   it("Get All trusters", async function() {
     await Checkpointer.trust(deployer.address);
-    
     const t = await Checkpointer.getTrusted();
+    expect(t[0] == deployer.address);
     console.log(t);
   });
 
