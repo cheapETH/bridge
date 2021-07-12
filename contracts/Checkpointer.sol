@@ -17,15 +17,21 @@ contract Checkpointer {
     uint savedBlockNumber;
   }
 
-  mapping (uint => mapping (address => Checkpoint)) private att;
-  mapping (address => address) private trusted;
+  // This is a list of the current valid "stakers"
   address[] trusters;
+
+  // This is a mapping of what address the stakers trust
+  mapping (address => address) private trusted;
+
+  // For each block, this is a mapping from an address to what they trust
+  mapping (uint => mapping (address => Checkpoint)) private att;
 
   constructor() public {
   }
 
   /**
    * Attest to a given block number having a hash
+   * Anybody can call this, and on this chain they can't attest to the wrong hash
    * Note: this transaction itself is signed by msg.sender
    */
   function attest(uint number, bytes32 blockHash) public {
@@ -66,6 +72,7 @@ contract Checkpointer {
       trusters[lowest] = msg.sender;
     }
   }
+
   function getTrusted() public view returns (address[] memory) {
     address[] memory ret = new address[](trusters.length);
     for(uint i = 0; i < trusters.length; i++) {
