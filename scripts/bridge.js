@@ -28,11 +28,7 @@ console.log("Using bridge at address", bridgeAddress);
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-
-  console.log(
-    "Running from the address:",
-    deployer.address
-  );
+  console.log("Running from the address:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   var Bridge;
