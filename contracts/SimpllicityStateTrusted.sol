@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0
+pragma solidity >=0.6.0;
 
 // TODO: upgrade this to be decentralized
 contract SimplicityStateTrusted {
   address owner;
-  constructor() { owner = msg.sender; }
+  constructor() public { owner = msg.sender; }
   modifier onlyOwner() { require(msg.sender == owner); _; }
 
   mapping (uint => bytes32) private L2State;
 
-  function getTrustedState(uint blockNumber) external returns (bytes32) view {
+  function getTrustedState(uint blockNumber) external view returns (bytes32) {
     bytes32 ret = L2State[blockNumber];
     require(ret != bytes32(0));
     return ret;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0;
+pragma solidity >=0.6.0;
+pragma experimental ABIEncoderV2;
 
 // Simplicity is an L2 rollup:
 //   It exists in this contract + sgeth
@@ -16,7 +17,7 @@ contract Simplicity {
   SimplicityState public state;
 
   address owner;
-  constructor() { owner = msg.sender; }
+  constructor() public { owner = msg.sender; }
   modifier onlyOwner() { require(msg.sender == owner); _; }
 
   // moderation

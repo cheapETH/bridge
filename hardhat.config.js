@@ -22,8 +22,8 @@ module.exports = {
   networks: {
     cheapeth: {
       url: "https://rpc.cheapeth.org/rpc",
-      accounts: [bridgeKey],
-      gasPrice: 2000000000
+      gasPrice: 2000000000,
+      accounts: bridgeKey == "" ? [] : [bridgeKey],
     }
   },
   paths: {
